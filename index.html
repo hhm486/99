@@ -3,670 +3,655 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>능소화 🌺</title>
+    <title>미래의 빚 (차트 및 파이어베이스 동기화)</title>
+    <link rel="manifest" href="manifest.json">
     <style>
-        * {
-            box-sizing: border-box;
-            margin: 0;
-            padding: 0;
-            font-family: 'Pretendard', 'Malgun Gothic', sans-serif;
+        :root {
+            --bg-color: #f3f1ec;
+            --card-bg: #ffffff;
+            --primary: #3b5998;
+            --primary-light: #eef2f7;
+            --text-main: #2d3748;
+            --text-sub: #718096;
+            --border-color: #e2e8f0;
+            --accent-green: #2f855a;
+            --accent-red: #c53030;
+            --input-bg: #f8fafc;
         }
-
+        * { box-sizing: border-box; }
         body {
-            background-color: #fff0f3;
-            display: flex;
-            justify-content: center;
-            align-items: flex-start;
-            min-height: 100vh;
-            padding: 30px 20px;
-        }
-
-        .main-container {
-            display: flex;
-            flex-direction: column;
-            gap: 25px;
-            max-width: 500px;
-            width: 100%;
-        }
-
-        /* 공통 카드 스타일 */
-        .card {
-            background: #ffffff;
-            border-radius: 20px;
-            padding: 25px;
-            border: 2px solid #fecdd3;
-            box-shadow: 0 10px 25px rgba(244, 63, 94, 0.08);
-        }
-
-        /* 1. 상단 달력 스타일 */
-        .calendar-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 20px;
-            color: #e11d48;
-            font-weight: bold;
-        }
-
-        .calendar-header button {
-            background: #ffe4e6;
-            border: none;
-            color: #e11d48;
-            padding: 8px 16px;
-            border-radius: 10px;
-            cursor: pointer;
-            font-weight: bold;
-            transition: 0.2s;
-        }
-
-        .calendar-header button:hover {
-            background: #fecdd3;
-        }
-
-        .calendar-grid {
-            display: grid;
-            grid-template-columns: repeat(7, 1fr);
-            gap: 6px;
-            text-align: center;
-        }
-
-        .day-name {
-            font-weight: bold;
-            color: #fb7185;
-            padding-bottom: 8px;
-            font-size: 13px;
-        }
-
-        .day-name.sun { color: #f43f5e; }
-        .day-name.sat { color: #818cf8; }
-
-        .date-cell {
-            position: relative;
-            padding: 10px 0;
-            border-radius: 10px;
-            cursor: pointer;
-            font-size: 14px;
-            color: #555;
-            transition: all 0.2s;
-        }
-
-        .date-cell:hover:not(.empty) {
-            background-color: #ffe4e6;
-            color: #e11d48;
-            font-weight: bold;
-        }
-
-        .date-cell.selected {
-            background-color: #fda4af;
-            color: white;
-            font-weight: bold;
-        }
-
-        /* 밑줄 스타일 */
-        .date-cell.has-entry::after {
-            content: '';
-            position: absolute;
-            bottom: 4px;
-            left: 50%;
-            transform: translateX(-50%);
-            width: 16px;
-            height: 3px;
-            background-color: #fb7185;
-            border-radius: 2px;
-        }
-
-        .date-cell.selected.has-entry::after {
-            background-color: #ffffff;
-        }
-
-        /* 2. 섹션 타이틀 */
-        .section-title {
-            text-align: center;
-            color: #e11d48;
-            margin-bottom: 20px;
-            font-size: 20px;
-        }
-
-        /* 폼 스타일 */
-        .form-group {
-            margin-bottom: 16px;
-        }
-
-        label {
-            display: block;
-            font-weight: bold;
-            color: #f43f5e;
-            margin-bottom: 6px;
-            font-size: 13px;
-        }
-
-        input[type="text"], textarea {
-            width: 100%;
-            padding: 12px;
-            border: 1.5px solid #fecdd3;
-            border-radius: 10px;
-            background-color: #fff1f2;
-            font-size: 13px;
-            color: #333;
-            outline: none;
-            transition: all 0.3s ease;
-        }
-
-        input:focus, textarea:focus {
-            border-color: #fda4af;
-            background-color: #ffffff;
-            box-shadow: 0 0 6px rgba(251, 113, 133, 0.25);
-        }
-
-        textarea {
-            resize: vertical;
-            min-height: 90px;
-        }
-
-        .btn-group {
-            display: flex;
-            gap: 10px;
-            margin-top: 5px;
-        }
-
-        .submit-btn {
-            flex: 1;
-            padding: 14px;
-            background-color: #fda4af;
-            color: white;
-            border: none;
-            border-radius: 10px;
-            font-size: 15px;
-            font-weight: bold;
-            cursor: pointer;
-            transition: background-color 0.3s;
-        }
-
-        .submit-btn:hover {
-            background-color: #f43f5e;
-        }
-
-        .cancel-btn {
-            padding: 14px 20px;
-            background-color: #e5e7eb;
-            color: #4b5563;
-            border: none;
-            border-radius: 10px;
-            font-size: 15px;
-            font-weight: bold;
-            cursor: pointer;
-            display: none;
-        }
-
-        .cancel-btn:hover {
-            background-color: #d1d5db;
-        }
-
-        /* 3. 일기 데이터 출력 영역 */
-        .diary-item {
-            background-color: #fff1f2;
-            border: 1.5px solid #fecdd3;
-            border-radius: 12px;
-            padding: 18px;
-            position: relative;
-        }
-
-        .diary-item-date {
-            font-size: 12px;
-            font-weight: bold;
-            color: #fb7185;
-            margin-bottom: 6px;
-        }
-
-        .diary-item-title {
-            font-size: 16px;
-            font-weight: bold;
-            color: #e11d48;
-            margin-bottom: 10px;
-            padding-right: 80px;
-        }
-
-        .diary-item-content {
-            font-size: 14px;
-            color: #444;
-            white-space: pre-wrap;
+            font-family: -apple-system, BlinkMacSystemFont, "Apple SD Gothic Neo", "Segoe UI", Roboto, Arial, sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-main);
             line-height: 1.5;
-            margin-bottom: 12px;
+            margin: 0;
+            padding: 10px;
         }
-
-        .book-section {
-            background-color: #ffe4e6;
-            padding: 12px;
-            border-radius: 8px;
-            font-size: 13px;
-            border: 1px solid #fecdd3;
+        .container { max-width: 1000px; margin: 0 auto; }
+        .header { margin-bottom: 12px; padding: 8px 4px; display: flex; justify-content: space-between; align-items: center; }
+        .header h1 { font-size: 18px; font-weight: 700; color: var(--text-main); margin: 0 0 4px 0; }
+        .header p { color: var(--text-sub); font-size: 12px; margin: 0; }
+        .sync-status { font-size: 11px; font-weight: 600; padding: 4px 8px; border-radius: 12px; background: #e2e8f0; color: #4a5568; }
+        .grid-layout { display: flex; flex-direction: column; gap: 12px; margin-bottom: 12px; }
+        @media (min-width: 768px) {
+            .grid-layout { display: grid; grid-template-columns: repeat(2, 1fr); }
         }
-
-        .book-title-text {
-            font-weight: bold;
-            color: #f43f5e;
-            margin-bottom: 4px;
+        .card { background: var(--card-bg); border-radius: 12px; padding: 12px; box-shadow: 0 2px 5px rgba(0,0,0,0.03); border: 1px solid var(--border-color); }
+        .card-title { font-size: 14px; font-weight: 600; margin-bottom: 10px; display: flex; align-items: center; justify-content: space-between; color: var(--primary); }
+        .btn-group-header { display: flex; gap: 6px; }
+        .table-wrapper { width: 100%; overflow-x: auto; -webkit-overflow-scrolling: touch; border-radius: 8px; border: 1px solid var(--border-color); }
+        table { width: 100%; border-collapse: collapse; font-size: 12px; white-space: nowrap; background-color: #ffffff; }
+        th, td { padding: 6px 4px; text-align: left; border-bottom: 1px solid var(--border-color); vertical-align: middle; }
+        th { background-color: var(--primary-light); color: var(--primary); font-weight: 600; }
+        .text-right { text-align: right; }
+        .text-center { text-align: center; }
+        input[type="number"], input[type="text"], select {
+            width: 100%; min-width: 60px; padding: 6px 4px; border: 1px solid #cbd5e1; border-radius: 6px;
+            font-size: 12px; text-align: right; background-color: var(--input-bg); color: var(--text-main); transition: all 0.2s;
         }
-
-        .book-content-text {
-            color: #666;
-            white-space: pre-wrap;
-        }
-
-        /* 수정 및 삭제 버튼 영역 */
-        .action-btns {
-            position: absolute;
-            top: 15px;
-            right: 15px;
-            display: flex;
-            gap: 8px;
-        }
-
-        .action-btn {
-            background: none;
-            border: none;
-            cursor: pointer;
-            font-size: 12px;
-            font-weight: bold;
-            transition: color 0.2s;
-        }
-
-        .edit-btn {
-            color: #fb7185;
-        }
-
-        .edit-btn:hover {
-            color: #e11d48;
-        }
-
-        .delete-btn {
-            color: #fda4af;
-        }
-
-        .delete-btn:hover {
-            color: #f43f5e;
-        }
-
-        .no-data {
-            text-align: center;
-            color: #fda4af;
-            font-size: 14px;
-            padding: 10px 0;
-        }
-
-        /* 4. 페이지네이션 스타일 */
-        .pagination {
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            gap: 12px;
-            margin-top: 15px;
-        }
-
-        .page-btn {
-            background-color: #ffe4e6;
-            border: none;
-            color: #e11d48;
-            padding: 8px 16px;
-            border-radius: 8px;
-            cursor: pointer;
-            font-size: 13px;
-            font-weight: bold;
-        }
-
-        .page-btn:disabled {
-            opacity: 0.4;
-            cursor: default;
-        }
-
-        .page-num {
-            font-size: 14px;
-            color: #f43f5e;
-            font-weight: bold;
-        }
+        input[type="text"].text-left { text-align: left; }
+        input[type="text"].text-center { text-align: center; }
+        input:focus, select:focus { outline: none; border-color: var(--primary); background-color: #ffffff; box-shadow: 0 0 0 2px rgba(59, 89, 152, 0.15); }
+        .income-input { background-color: #f0fdf4 !important; font-weight: 600; color: #166534 !important; }
+        .total-row { background-color: #fff5f5; color: var(--accent-red); font-weight: 700; }
+        .remaining-row { background-color: #f0fdf4; color: var(--accent-green); font-weight: 700; }
+        .total-val { font-weight: 700; color: var(--accent-red); padding: 6px 4px; }
+        .rem-val { font-weight: 700; color: var(--accent-green); padding: 6px 4px; }
+        .btn { padding: 5px 9px; border: none; border-radius: 6px; font-size: 11px; font-weight: 600; cursor: pointer; white-space: nowrap; touch-action: manipulation; }
+        .btn-add { background-color: var(--primary); color: white; }
+        .btn-del { background-color: #fee2e2; color: var(--accent-red); padding: 3px 6px; }
+        .btn-col-del { background-color: transparent; color: var(--accent-red); border: none; font-size: 11px; cursor: pointer; margin-left: 2px; font-weight: bold; }
+        .header-input { background-color: transparent !important; border: 1px solid transparent !important; font-weight: 700 !important; color: var(--primary) !important; text-align: center !important; padding: 2px !important; min-width: 45px !important; display: inline-block; width: 100px !important; }
+        .header-input:hover, .header-input:focus { border: 1px solid var(--primary) !important; background-color: #ffffff !important; }
+        .th-month-container { display: flex; align-items: center; justify-content: center; }
+        .chart-container { display: flex; flex-direction: column; gap: 10px; margin-top: 5px; }
+        .chart-row { display: flex; align-items: center; gap: 8px; font-size: 11px; }
+        .chart-label { width: 70px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .chart-bar-bg { flex: 1; background-color: #e2e8f0; border-radius: 10px; height: 14px; overflow: hidden; position: relative; }
+        .chart-bar-fill { background-color: var(--primary); height: 100%; border-radius: 10px; width: 0%; transition: width 0.3s ease; }
+        .chart-value { width: 65px; text-align: right; font-weight: 600; color: var(--accent-red); }
     </style>
 </head>
 <body>
-
-<div class="main-container">
-    <!-- [1] 달력 카드 -->
-    <div class="card">
-        <div class="calendar-header">
-            <button onclick="changeMonth(-1)">이전</button>
-            <h2 id="monthYearTitle"></h2>
-            <button onclick="changeMonth(1)">다음</button>
+<div class="container">
+    <div class="header">
+        <div>
+            <h1>📊 미래의 빚</h1>
+            <p>실시간 기기 동기화 지원 자금 관리 시스템</p>
         </div>
-        <div class="calendar-grid" id="calendarGrid">
-            <div class="day-name sun">일</div>
-            <div class="day-name">월</div>
-            <div class="day-name">화</div>
-            <div class="day-name">수</div>
-            <div class="day-name">목</div>
-            <div class="day-name">금</div>
-            <div class="day-name sat">토</div>
+        <div id="sync-status" class="sync-status">🔄 연동 준비 중...</div>
+    </div>
+
+    <div class="grid-layout" style="margin-bottom: 12px;">
+        <div class="card">
+            <div class="card-title">
+                <span>📅 월별 자금 흐름 추이</span>
+                <div class="btn-group-header">
+                    <button class="btn btn-add" onclick="addMonthColumn()">+ 월 추가</button>
+                    <button class="btn btn-add" style="background-color: #4a5568;" onclick="addFlowRow()">+ 항목 추가</button>
+                </div>
+            </div>
+            <div class="table-wrapper">
+                <table id="flow-table">
+                    <thead>
+                        <tr id="flow-thead-tr">
+                            <th style="min-width: 90px;">항목명</th>
+                            <th class="text-center th-month" style="min-width: 70px;">
+                                <div class="th-month-container">
+                                    <input type="text" class="header-input" value="1월" onchange="triggerSave()">
+                                    <button class="btn-col-del" onclick="deleteMonthColumn(this)">✕</button>
+                                </div>
+                            </th>
+                            <th class="text-center th-month" style="min-width: 70px;">
+                                <div class="th-month-container">
+                                    <input type="text" class="header-input" value="2월" onchange="triggerSave()">
+                                    <button class="btn-col-del" onclick="deleteMonthColumn(this)">✕</button>
+                                </div>
+                            </th>
+                            <th class="text-center del-col-header" style="width: 35px;">삭제</th>
+                        </tr>
+                    </thead>
+                    <tbody id="flow-tbody">
+                        <tr style="background-color: #f8fafc;" id="income-row">
+                            <td><input type="text" class="text-left" value="💵 월 수입" readonly style="font-weight: 600; background: transparent; border: none;"></td>
+                            <td><input type="number" class="income-input flow-inc" value="0" oninput="calcAllMonths()"></td>
+                            <td><input type="number" class="income-input flow-inc" value="0" oninput="calcAllMonths()"></td>
+                            <td class="text-center del-cell">-</td>
+                        </tr>
+                        <tr>
+                            <td><input type="text" class="text-left" value="기타 지출 항목" onchange="triggerSave()"></td>
+                            <td><input type="number" class="flow-item" value="0" oninput="calcAllMonths()"></td>
+                            <td><input type="number" class="flow-item" value="0" oninput="calcAllMonths()"></td>
+                            <td class="text-center del-cell"><button class="btn btn-del" onclick="deleteRow(this)">X</button></td>
+                        </tr>
+                    </tbody>
+                    <tfoot>
+                        <tr class="total-row" id="total-tr">
+                            <td>지출 합계</td>
+                            <td class="text-right total-val">0원</td>
+                            <td class="text-right total-val">0원</td>
+                            <td class="del-cell"></td>
+                        </tr>
+                        <tr class="remaining-row" id="rem-tr">
+                            <td>💡 남는 돈</td>
+                            <td class="text-right rem-val">0원</td>
+                            <td class="text-right rem-val">0원</td>
+                            <td class="del-cell"></td>
+                        </tr>
+                    </tfoot>
+                </table>
+            </div>
+        </div>
+
+        <div class="card">
+            <div class="card-title">
+                <span>📊 카드별 지출 비교 (1자 그래프)</span>
+            </div>
+            <div id="card-chart-container" class="chart-container"></div>
         </div>
     </div>
 
-    <!-- [2] 일기 작성 카드 -->
-    <div class="card">
-        <h2 class="section-title">🌺 능소화 🌺</h2>
-
-        <form id="diaryForm" onsubmit="saveDiary(event)">
-            <input type="hidden" id="edit-id">
-            
-            <div class="form-group">
-                <label for="diary-title">일기 제목</label>
-                <input type="text" id="diary-title" oninput="saveDraft()" required>
+    <div class="grid-layout">
+        <div class="card">
+            <div class="card-title">
+                <span>🏦 은행 계좌 현황</span>
+                <button class="btn btn-add" onclick="addBankRow()">+ 추가</button>
             </div>
-
-            <div class="form-group">
-                <label for="diary-content">일기 내용</label>
-                <textarea id="diary-content" oninput="saveDraft()" required></textarea>
+            <div class="table-wrapper">
+                <table>
+                    <thead>
+                        <tr>
+                            <th style="min-width: 75px;">은행명</th>
+                            <th style="min-width: 110px;">계좌번호</th>
+                            <th class="text-center" style="width: 45px;">이체일</th>
+                            <th class="text-right" style="min-width: 70px;">금액</th>
+                            <th class="text-center" style="width: 35px;">삭제</th>
+                        </tr>
+                    </thead>
+                    <tbody id="bank-tbody">
+                        <tr>
+                            <td><input type="text" class="text-left" value="주거래은행" onchange="triggerSave()"></td>
+                            <td><input type="text" class="text-left" value="000-000-000000" onchange="triggerSave()"></td>
+                            <td><input type="text" class="text-center" value="1일" onchange="triggerSave()"></td>
+                            <td><input type="number" value="0" onchange="triggerSave()"></td>
+                            <td class="text-center"><button class="btn btn-del" onclick="deleteRow(this)">X</button></td>
+                        </tr>
+                    </tbody>
+                </table>
             </div>
+        </div>
 
-            <div class="form-group">
-                <label for="book-title">책 제목</label>
-                <input type="text" id="book-title" oninput="saveDraft()">
+        <div class="card">
+            <div class="card-title">
+                <span>🎯 재무 및 대출 상환 목표</span>
+                <button class="btn btn-add" onclick="addGoalRow()">+ 추가</button>
             </div>
-
-            <div class="form-group">
-                <label for="book-content">책 내용</label>
-                <textarea id="book-content" oninput="saveDraft()"></textarea>
+            <div class="table-wrapper">
+                <table>
+                    <thead>
+                        <tr>
+                            <th style="min-width: 90px;">목표 항목</th>
+                            <th style="width: 70px;">유형</th>
+                            <th style="min-width: 110px;">상세 계획</th>
+                            <th class="text-center" style="width: 35px;">삭제</th>
+                        </tr>
+                    </thead>
+                    <tbody id="goal-tbody">
+                        <tr>
+                            <td><input type="text" class="text-left" value="목표 항목 1" onchange="triggerSave()"></td>
+                            <td>
+                                <select onchange="triggerSave()">
+                                    <option value="목표" selected>목표</option>
+                                    <option value="상환방법">상환</option>
+                                    <option value="적립방법">적립</option>
+                                </select>
+                            </td>
+                            <td><input type="text" class="text-left" value="상세 계획 입력" onchange="triggerSave()"></td>
+                            <td class="text-center"><button class="btn btn-del" onclick="deleteRow(this)">X</button></td>
+                        </tr>
+                    </tbody>
+                </table>
             </div>
-
-            <div class="btn-group">
-                <button type="submit" class="submit-btn" id="submit-btn-text">저장</button>
-                <button type="button" class="cancel-btn" id="cancel-btn" onclick="resetForm()">취소</button>
-            </div>
-        </form>
+        </div>
     </div>
 
-    <!-- [3] 일기 출력 카드 -->
-    <div class="card">
-        <div id="allDiaryList"></div>
-        <div class="pagination" id="paginationControls"></div>
+    <div style="margin-top: 12px; margin-bottom: 10px; display: flex; justify-content: space-between; align-items: center;">
+        <h3 style="margin: 0; font-size: 15px; color: var(--primary);">💳 세부 고정지출 그룹 (동적 관리)</h3>
+        <button class="btn btn-add" style="background-color: #2b6cb0;" onclick="addCardGroup()">+ 새 카드/고정지출 그룹 추가</button>
     </div>
+
+    <div class="grid-layout" id="card-groups-container"></div>
 </div>
 
-<script>
-    let currentDate = new Date();
-    
-    // 로컬스토리지에서 이전에 선택해둔 날짜 불러오기 (없으면 오늘 날짜)
-    const todayStr = getFormattedDate(new Date());
-    let selectedDateStr = localStorage.getItem('selectedDateStr') || todayStr;
-    
-    let currentPage = 1;
-    let diaryList = JSON.parse(localStorage.getItem('diaryList')) || [];
+<script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+    import { getFirestore, doc, setDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
-    function getFormattedDate(dateObj) {
-        const y = dateObj.getFullYear();
-        const m = String(dateObj.getMonth() + 1).padStart(2, '0');
-        const d = String(dateObj.getDate()).padStart(2, '0');
-        return `${y}-${m}-${d}`;
+    const firebaseConfig = {
+        apiKey: "AIzaSyCFrkG08Uai1-6h13yR-gsQSlN68GuZNNw",
+        authDomain: "nsh486.firebaseapp.com",
+        projectId: "nsh486",
+        storageBucket: "nsh486.firebasestorage.app",
+        messagingSenderId: "173084611849",
+        appId: "1:173084611849:web:4b42c1e0e9bc58830eefd8"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const db = getFirestore(app);
+    const docRef = doc(db, "budgetData", "mainData");
+
+    let isRemoteUpdate = false;
+    let saveTimeout = null;
+
+    function setSyncStatus(status) {
+        const el = document.getElementById('sync-status');
+        if (status === 'syncing') { el.textContent = '⏳ 저장 중...'; el.style.background = '#feebc8'; el.style.color = '#c05621'; }
+        else if (status === 'synced') { el.textContent = '🟢 실시간 연결됨'; el.style.background = '#c6f6d5'; el.style.color = '#22543d'; }
+        else if (status === 'error') { el.textContent = '🔴 저장 실패'; el.style.background = '#fed7d7'; el.style.color = '#9b2c2c'; }
     }
 
-    function renderCalendar() {
-        const year = currentDate.getFullYear();
-        const month = currentDate.getMonth();
-
-        document.getElementById('monthYearTitle').innerText = `${year}년 ${month + 1}월`;
-
-        const firstDay = new Date(year, month, 1).getDay();
-        const lastDate = new Date(year, month + 1, 0).getDate();
-        const grid = document.getElementById('calendarGrid');
+    function collectData() {
+        const months = Array.from(document.querySelectorAll('.th-month .header-input')).map(i => i.value);
+        const incomes = Array.from(document.querySelectorAll('#income-row .flow-inc')).map(i => i.value);
         
-        const cells = grid.querySelectorAll('.date-cell');
-        cells.forEach(cell => cell.remove());
+        const flowRows = [];
+        document.querySelectorAll('#flow-tbody tr:not(#income-row)').forEach(tr => {
+            const label = tr.querySelector('input[type="text"]').value;
+            const vals = Array.from(tr.querySelectorAll('.flow-item')).map(i => i.value);
+            const linked = tr.dataset.linkedCard || null;
+            flowRows.push({ label, vals, linked });
+        });
 
-        for (let i = 0; i < firstDay; i++) {
-            const emptyDiv = document.createElement('div');
-            emptyDiv.classList.add('date-cell', 'empty');
-            grid.appendChild(emptyDiv);
-        }
+        const bankRows = [];
+        document.querySelectorAll('#bank-tbody tr').forEach(tr => {
+            const inputs = tr.querySelectorAll('input');
+            bankRows.push({ bank: inputs[0].value, num: inputs[1].value, day: inputs[2].value, amt: inputs[3].value });
+        });
 
-        for (let day = 1; day <= lastDate; day++) {
-            const dateDiv = document.createElement('div');
-            dateDiv.classList.add('date-cell');
-            dateDiv.innerText = day;
+        const goalRows = [];
+        document.querySelectorAll('#goal-tbody tr').forEach(tr => {
+            const name = tr.querySelector('input[type="text"]').value;
+            const type = tr.querySelector('select').value;
+            const detail = tr.querySelectorAll('input[type="text"]')[1].value;
+            goalRows.push({ name, type, detail });
+        });
 
-            const formattedMonth = String(month + 1).padStart(2, '0');
-            const formattedDay = String(day).padStart(2, '0');
-            const dateKey = `${year}-${formattedMonth}-${formattedDay}`;
+        const cardGroups = [];
+        document.querySelectorAll('#card-groups-container .card').forEach(card => {
+            const groupId = card.id;
+            const name = card.querySelector('.card-title-input').value;
+            const items = [];
+            card.querySelectorAll(`tbody tr`).forEach(tr => {
+                const itemLabel = tr.querySelector('input[type="text"]').value;
+                const itemVal = tr.querySelector('input[type="number"]').value;
+                items.push({ itemLabel, itemVal });
+            });
+            cardGroups.push({ groupId, name, items });
+        });
 
-            const hasEntry = diaryList.some(entry => entry.date === dateKey);
-            if (hasEntry) {
-                dateDiv.classList.add('has-entry');
+        return { months, incomes, flowRows, bankRows, goalRows, cardGroups };
+    }
+
+    window.triggerSave = function() {
+        if (isRemoteUpdate) return;
+        setSyncStatus('syncing');
+        clearTimeout(saveTimeout);
+        saveTimeout = setTimeout(async () => {
+            try {
+                const data = collectData();
+                await setDoc(docRef, data);
+                setSyncStatus('synced');
+            } catch (e) {
+                console.error("Save Error: ", e);
+                setSyncStatus('error');
             }
+        }, 500);
+    };
 
-            if (selectedDateStr === dateKey) {
-                dateDiv.classList.add('selected');
-            }
-
-            dateDiv.onclick = function() {
-                selectDate(dateKey);
-            };
-
-            grid.appendChild(dateDiv);
-        }
-    }
-
-    function selectDate(dateKey) {
-        selectedDateStr = dateKey;
-        localStorage.setItem('selectedDateStr', selectedDateStr);
-        currentPage = 1;
-        renderCalendar();
-        renderFilteredDiaryList();
-    }
-
-    function changeMonth(delta) {
-        currentDate.setMonth(currentDate.getMonth() + delta);
-        renderCalendar();
-    }
-
-    // 작성 중인 내용 실시간 임시저장
-    function saveDraft() {
-        const draftData = {
-            title: document.getElementById('diary-title').value,
-            content: document.getElementById('diary-content').value,
-            bookTitle: document.getElementById('book-title').value,
-            bookContent: document.getElementById('book-content').value,
-            editId: document.getElementById('edit-id').value
-        };
-        localStorage.setItem('diaryDraft', JSON.stringify(draftData));
-    }
-
-    // 임시저장된 입력값 복원
-    function loadDraft() {
-        const draft = JSON.parse(localStorage.getItem('diaryDraft'));
-        if (draft) {
-            document.getElementById('diary-title').value = draft.title || '';
-            document.getElementById('diary-content').value = draft.content || '';
-            document.getElementById('book-title').value = draft.bookTitle || '';
-            document.getElementById('book-content').value = draft.bookContent || '';
-            
-            if (draft.editId) {
-                document.getElementById('edit-id').value = draft.editId;
-                document.getElementById('submit-btn-text').innerText = '수정 완료';
-                document.getElementById('cancel-btn').style.display = 'block';
-            }
-        }
-    }
-
-    function saveDiary(event) {
-        event.preventDefault();
-
-        if (!selectedDateStr) {
-            alert("달력에서 날짜를 먼저 선택해주세요!");
-            return;
-        }
-
-        const editId = document.getElementById('edit-id').value;
-        const title = document.getElementById('diary-title').value;
-        const content = document.getElementById('diary-content').value;
-        const bookTitle = document.getElementById('book-title').value;
-        const bookContent = document.getElementById('book-content').value;
-
-        if (editId) {
-            const targetIndex = diaryList.findIndex(entry => entry.id == editId);
-            if (targetIndex !== -1) {
-                diaryList[targetIndex] = {
-                    ...diaryList[targetIndex],
-                    title,
-                    content,
-                    bookTitle,
-                    bookContent
-                };
-                alert("일기가 수정되었습니다!");
-            }
+    onSnapshot(docRef, (docSnap) => {
+        if (docSnap.exists()) {
+            isRemoteUpdate = true;
+            renderData(docSnap.data());
+            setSyncStatus('synced');
+            isRemoteUpdate = false;
         } else {
-            const newEntry = {
-                id: Date.now(),
-                date: selectedDateStr,
-                title,
-                content,
-                bookTitle,
-                bookContent
-            };
-            diaryList.unshift(newEntry);
-            currentPage = 1;
-            alert("일기가 저장되었습니다!");
+            window.triggerSave();
         }
+    });
 
-        localStorage.setItem('diaryList', JSON.stringify(diaryList));
-        localStorage.removeItem('diaryDraft'); // 저장 완료 시 임시저장 데이터 삭제
+    function renderData(data) {
+        if (!data) return;
 
-        resetForm();
-        renderCalendar();
-        renderFilteredDiaryList();
+        // 1. 월 헤더 재구성
+        const headerTr = document.getElementById('flow-thead-tr');
+        document.querySelectorAll('.th-month').forEach(el => el.remove());
+        const delColHeader = headerTr.querySelector('.del-col-header');
+        
+        (data.months || ["1월", "2월"]).forEach(m => {
+            const newTh = document.createElement('th');
+            newTh.className = 'text-center th-month';
+            newTh.style.minWidth = '70px';
+            newTh.innerHTML = `<div class="th-month-container"><input type="text" class="header-input" value="${m}" onchange="triggerSave()"><button class="btn-col-del" onclick="deleteMonthColumn(this)">✕</button></div>`;
+            headerTr.insertBefore(newTh, delColHeader);
+        });
+
+        // 2. 카드 그룹 재생성
+        const cardContainer = document.getElementById('card-groups-container');
+        cardContainer.innerHTML = '';
+        (data.cardGroups || []).forEach(cg => {
+            window.createCardGroupDOM(cg.groupId, cg.name, cg.items);
+        });
+
+        // 3. 수입 및 지출 행 재생성
+        const tbody = document.getElementById('flow-tbody');
+        tbody.innerHTML = '';
+
+        // 수입 행
+        const incTr = document.createElement('tr');
+        incTr.id = 'income-row';
+        incTr.style.backgroundColor = '#f8fafc';
+        let incHtml = `<td><input type="text" class="text-left" value="💵 월 수입" readonly style="font-weight: 600; background: transparent; border: none;"></td>`;
+        (data.incomes || [0, 0]).forEach(val => {
+            incHtml += `<td><input type="number" class="income-input flow-inc" value="${val}" oninput="calcAllMonths()"></td>`;
+        });
+        incHtml += `<td class="text-center del-cell">-</td>`;
+        incTr.innerHTML = incHtml;
+        tbody.appendChild(incTr);
+
+        // 일반/연동 지출 행
+        (data.flowRows || []).forEach(fr => {
+            const tr = document.createElement('tr');
+            if (fr.linked) {
+                tr.id = 'flow-row-' + fr.linked;
+                tr.dataset.linkedCard = fr.linked;
+            }
+            let rowHtml = `<td><input type="text" class="text-left ${fr.linked ? 'flow-card-label' : ''}" value="${fr.label}" ${fr.linked ? 'readonly style="font-weight:600;"' : 'onchange="triggerSave()"'}></td>`;
+            (fr.vals || []).forEach(v => {
+                const classList = fr.linked ? `flow-item card-linked-${fr.linked}` : 'flow-item';
+                rowHtml += `<td><input type="number" class="${classList}" value="${v}" oninput="calcAllMonths()"></td>`;
+            });
+            rowHtml += `<td class="text-center del-cell">${fr.linked ? '<span style="color:#aaa; font-size:10px;">연동됨</span>' : '<button class="btn btn-del" onclick="deleteRow(this)">X</button>'}</td>`;
+            tr.innerHTML = rowHtml;
+            tbody.appendChild(tr);
+        });
+
+        // 푸터 영역 맞추기
+        adjustTableFooter(data.months ? data.months.length : 2);
+
+        // 은행 계좌
+        const bankTbody = document.getElementById('bank-tbody');
+        bankTbody.innerHTML = '';
+        (data.bankRows || []).forEach(b => {
+            const tr = document.createElement('tr');
+            tr.innerHTML = `<td><input type="text" class="text-left" value="${b.bank}" onchange="triggerSave()"></td><td><input type="text" class="text-left" value="${b.num}" onchange="triggerSave()"></td><td><input type="text" class="text-center" value="${b.day}" onchange="triggerSave()"></td><td><input type="number" value="${b.amt}" onchange="triggerSave()"></td><td class="text-center"><button class="btn btn-del" onclick="deleteRow(this)">X</button></td>`;
+            bankTbody.appendChild(tr);
+        });
+
+        // 재무 목표
+        const goalTbody = document.getElementById('goal-tbody');
+        goalTbody.innerHTML = '';
+        (data.goalRows || []).forEach(g => {
+            const tr = document.createElement('tr');
+            tr.innerHTML = `<td><input type="text" class="text-left" value="${g.name}" onchange="triggerSave()"></td><td><select onchange="triggerSave()"><option value="목표" ${g.type==='목표'?'selected':''}>목표</option><option value="상환방법" ${g.type==='상환방법'?'selected':''}>상환</option><option value="적립방법" ${g.type==='적립방법'?'selected':''}>적립</option></select></td><td><input type="text" class="text-left" value="${g.detail}" onchange="triggerSave()"></td><td class="text-center"><button class="btn btn-del" onclick="deleteRow(this)">X</button></td>`;
+            goalTbody.appendChild(tr);
+        });
+
+        window.calcAllMonths();
     }
 
-    function deleteDiary(id) {
-        if (confirm("정말 이 일기를 삭제하시겠습니까?")) {
-            diaryList = diaryList.filter(entry => entry.id !== id);
-            localStorage.setItem('diaryList', JSON.stringify(diaryList));
-            
-            renderCalendar();
-            renderFilteredDiaryList();
+    function adjustTableFooter(colCount) {
+        const totalTr = document.getElementById('total-tr');
+        const remTr = document.getElementById('rem-tr');
+        totalTr.innerHTML = '<td>지출 합계</td>';
+        remTr.innerHTML = '<td>💡 남는 돈</td>';
+        for (let i = 0; i < colCount; i++) {
+            totalTr.innerHTML += '<td class="text-right total-val">0원</td>';
+            remTr.innerHTML += '<td class="text-right rem-val">0원</td>';
         }
+        totalTr.innerHTML += '<td class="del-cell"></td>';
+        remTr.innerHTML += '<td class="del-cell"></td>';
+    }
+</script>
+
+<script>
+    let cardGroupIndex = 100;
+    function formatNumber(num) { return num.toLocaleString('ko-KR') + '원'; }
+
+    function deleteRow(btn) {
+        btn.closest('tr').remove();
+        calcAllMonths();
     }
 
-    function editDiary(id) {
-        const entry = diaryList.find(e => e.id === id);
-        if (!entry) return;
+    function addMonthColumn() {
+        const monthHeaders = document.querySelectorAll('.th-month');
+        const newMonthName = (monthHeaders.length + 1) + '월';
+        const headerTr = document.getElementById('flow-thead-tr');
+        const delColHeader = headerTr.querySelector('.del-col-header');
+        
+        const newTh = document.createElement('th');
+        newTh.className = 'text-center th-month';
+        newTh.style.minWidth = '70px';
+        newTh.innerHTML = `<div class="th-month-container"><input type="text" class="header-input" value="${newMonthName}" onchange="triggerSave()"><button class="btn-col-del" onclick="deleteMonthColumn(this)">✕</button></div>`;
+        headerTr.insertBefore(newTh, delColHeader);
 
-        selectedDateStr = entry.date;
-        localStorage.setItem('selectedDateStr', selectedDateStr);
+        const incomeRow = document.getElementById('income-row');
+        const newIncTd = document.createElement('td');
+        newIncTd.innerHTML = `<input type="number" class="income-input flow-inc" value="0" oninput="calcAllMonths()">`;
+        incomeRow.insertBefore(newIncTd, incomeRow.querySelector('.del-cell'));
 
-        document.getElementById('edit-id').value = entry.id;
-        document.getElementById('diary-title').value = entry.title || '';
-        document.getElementById('diary-content').value = entry.content || '';
-        document.getElementById('book-title').value = entry.bookTitle || '';
-        document.getElementById('book-content').value = entry.bookContent || '';
+        document.querySelectorAll('#flow-tbody tr:not(#income-row)').forEach(row => {
+            const newTd = document.createElement('td');
+            const linkedCardId = row.dataset.linkedCard;
+            let classList = 'flow-item';
+            let initialVal = linkedCardId ? getCardGroupSum(linkedCardId) : 0;
+            if (linkedCardId) classList += ' card-linked-' + linkedCardId;
+            newTd.innerHTML = `<input type="number" class="${classList}" value="${initialVal}" oninput="calcAllMonths()">`;
+            row.insertBefore(newTd, row.querySelector('.del-cell'));
+        });
 
-        document.getElementById('submit-btn-text').innerText = '수정 완료';
-        document.getElementById('cancel-btn').style.display = 'block';
+        const totalTr = document.getElementById('total-tr');
+        const newTotalTd = document.createElement('td');
+        newTotalTd.className = 'text-right total-val';
+        newTotalTd.textContent = '0원';
+        totalTr.insertBefore(newTotalTd, totalTr.querySelector('.del-cell'));
 
-        saveDraft(); // 수정 시작 상태도 임시 저장
-        renderCalendar();
+        const remTr = document.getElementById('rem-tr');
+        const newRemTd = document.createElement('td');
+        newRemTd.className = 'text-right rem-val';
+        newRemTd.textContent = '0원';
+        remTr.insertBefore(newRemTd, remTr.querySelector('.del-cell'));
 
-        document.getElementById('diaryForm').scrollIntoView({ behavior: 'smooth' });
+        calcAllMonths();
     }
 
-    function resetForm() {
-        document.getElementById('diaryForm').reset();
-        document.getElementById('edit-id').value = '';
-        document.getElementById('submit-btn-text').innerText = '저장';
-        document.getElementById('cancel-btn').style.display = 'none';
-        localStorage.removeItem('diaryDraft');
+    function deleteMonthColumn(btn) {
+        const th = btn.closest('th');
+        const headerTr = th.parentElement;
+        const colIndex = Array.from(headerTr.children).indexOf(th);
+        if (document.querySelectorAll('.th-month').length <= 1) { alert('최소 1개의 월은 유지되어야 합니다.'); return; }
+        th.remove();
+        document.querySelectorAll('#flow-tbody tr').forEach(row => { if (row.children[colIndex]) row.children[colIndex].remove(); });
+        if (document.getElementById('total-tr').children[colIndex]) document.getElementById('total-tr').children[colIndex].remove();
+        if (document.getElementById('rem-tr').children[colIndex]) document.getElementById('rem-tr').children[colIndex].remove();
+        calcAllMonths();
     }
 
-    function renderFilteredDiaryList() {
-        const listContainer = document.getElementById('allDiaryList');
-        const paginationContainer = document.getElementById('paginationControls');
-        listContainer.innerHTML = '';
-        paginationContainer.innerHTML = '';
+    function addFlowRow() {
+        const tbody = document.getElementById('flow-tbody');
+        const tr = document.createElement('tr');
+        const monthCount = document.querySelectorAll('.th-month').length;
+        let monthInputsHtml = '';
+        for (let i = 0; i < monthCount; i++) { monthInputsHtml += `<td><input type="number" class="flow-item" value="0" oninput="calcAllMonths()"></td>`; }
+        tr.innerHTML = `<td><input type="text" class="text-left" value="새 지출 항목" onchange="triggerSave()"></td>${monthInputsHtml}<td class="text-center del-cell"><button class="btn btn-del" onclick="deleteRow(this)">X</button></td>`;
+        tbody.appendChild(tr);
+        calcAllMonths();
+    }
 
-        if (!selectedDateStr) {
-            listContainer.innerHTML = '<div class="no-data">달력에서 날짜를 클릭해 주세요.</div>';
-            return;
-        }
+    window.createCardGroupDOM = function(groupId, groupName, items) {
+        const container = document.getElementById('card-groups-container');
+        const cardDiv = document.createElement('div');
+        cardDiv.className = 'card';
+        cardDiv.id = groupId;
 
-        const dayEntries = diaryList.filter(entry => entry.date === selectedDateStr);
+        let itemsHtml = '';
+        (items || [{itemLabel: '고정지출 1', itemVal: 0}]).forEach(it => {
+            itemsHtml += `<tr><td><input type="text" class="text-left" value="${it.itemLabel}" onchange="triggerSave()"></td><td><input type="number" class="card-item-${groupId}" value="${it.itemVal}" oninput="calcCardGroup('${groupId}')"></td><td class="text-center"><button class="btn btn-del" onclick="deleteCardSubItem(this, '${groupId}')">X</button></td></tr>`;
+        });
 
-        if (dayEntries.length === 0) {
-            listContainer.innerHTML = `<div class="no-data">${selectedDateStr}에 작성된 일기가 없습니다.</div>`;
-            return;
-        }
-
-        const totalPages = dayEntries.length;
-        if (currentPage > totalPages) currentPage = totalPages;
-        if (currentPage < 1) currentPage = 1;
-
-        const entry = dayEntries[currentPage - 1];
-
-        let bookHtml = '';
-        if (entry.bookTitle || entry.bookContent) {
-            bookHtml = `
-                <div class="book-section">
-                    ${entry.bookTitle ? `<div class="book-title-text">[책 제목] ${entry.bookTitle}</div>` : ''}
-                    ${entry.bookContent ? `<div class="book-content-text">${entry.bookContent}</div>` : ''}
+        cardDiv.innerHTML = `
+            <div class="card-title">
+                <input type="text" class="header-input card-title-input" style="font-size:13px; text-align:left !important; width:140px !important;" value="${groupName}" oninput="syncCardName('${groupId}', this.value)" onchange="triggerSave()">
+                <div>
+                    <button class="btn btn-add" onclick="addCardSubItem('${groupId}')">+ 항목</button>
+                    <button class="btn btn-del" style="margin-left:4px;" onclick="deleteCardGroup('${groupId}')">그룹 삭제</button>
                 </div>
-            `;
-        }
-
-        const item = document.createElement('div');
-        item.classList.add('diary-item');
-        item.innerHTML = `
-            <div class="action-btns">
-                <button class="action-btn edit-btn" onclick="editDiary(${entry.id})">수정</button>
-                <button class="action-btn delete-btn" onclick="deleteDiary(${entry.id})">삭제</button>
             </div>
-            <div class="diary-item-date">${entry.date}</div>
-            <div class="diary-item-title">${entry.title}</div>
-            <div class="diary-item-content">${entry.content}</div>
-            ${bookHtml}
+            <div class="table-wrapper">
+                <table>
+                    <thead><tr><th>항목명</th><th class="text-right" style="width: 90px;">금액</th><th class="text-center" style="width: 35px;">삭제</th></tr></thead>
+                    <tbody id="${groupId}-tbody">${itemsHtml}</tbody>
+                    <tfoot><tr class="total-row"><td>합계</td><td class="text-right total-val" id="${groupId}-total">0원</td><td></td></tr></tfoot>
+                </table>
+            </div>
         `;
+        container.appendChild(cardDiv);
+    };
 
-        listContainer.appendChild(item);
+    function addCardGroup(defaultName) {
+        cardGroupIndex++;
+        const groupId = 'group_' + cardGroupIndex;
+        const groupName = defaultName || ('💳 카드 ' + String.fromCharCode(65 + (cardGroupIndex % 26)));
+        window.createCardGroupDOM(groupId, groupName, [{itemLabel: '고정지출 1', itemVal: 0}]);
 
-        if (totalPages > 1) {
-            const prevBtn = document.createElement('button');
-            prevBtn.classList.add('page-btn');
-            prevBtn.innerText = '이전';
-            prevBtn.disabled = currentPage === 1;
-            prevBtn.onclick = () => {
-                currentPage--;
-                renderFilteredDiaryList();
-            };
+        const tbody = document.getElementById('flow-tbody');
+        const tr = document.createElement('tr');
+        tr.id = 'flow-row-' + groupId;
+        tr.dataset.linkedCard = groupId;
 
-            const pageInfo = document.createElement('span');
-            pageInfo.classList.add('page-num');
-            pageInfo.innerText = `${currentPage} / ${totalPages}`;
+        const monthCount = document.querySelectorAll('.th-month').length;
+        let monthInputsHtml = '';
+        for (let i = 0; i < monthCount; i++) { monthInputsHtml += `<td><input type="number" class="flow-item card-linked-${groupId}" value="0" oninput="calcAllMonths()"></td>`; }
+        tr.innerHTML = `<td><input type="text" class="text-left flow-card-label" value="${groupName} 🔗" readonly style="font-weight:600;"></td>${monthInputsHtml}<td class="text-center del-cell"><span style="color:#aaa; font-size:10px;">연동됨</span></td>`;
+        tbody.appendChild(tr);
 
-            const nextBtn = document.createElement('button');
-            nextBtn.classList.add('page-btn');
-            nextBtn.innerText = '다음';
-            nextBtn.disabled = currentPage === totalPages;
-            nextBtn.onclick = () => {
-                currentPage++;
-                renderFilteredDiaryList();
-            };
+        calcCardGroup(groupId);
+    }
 
-            paginationContainer.appendChild(prevBtn);
-            paginationContainer.appendChild(pageInfo);
-            paginationContainer.appendChild(nextBtn);
+    function syncCardName(groupId, newName) {
+        const flowRow = document.getElementById('flow-row-' + groupId);
+        if (flowRow) {
+            const labelInput = flowRow.querySelector('.flow-card-label');
+            if (labelInput) { labelInput.value = (newName.replace('💳', '').trim() || '카드 그룹') + ' 🔗'; }
         }
+        updateChart();
     }
 
-    // 초기 실행
-    if (selectedDateStr) {
-        const [sYear, sMonth] = selectedDateStr.split('-').map(Number);
-        currentDate.setFullYear(sYear, sMonth - 1, 1);
+    function deleteCardGroup(groupId) {
+        const groupCard = document.getElementById(groupId);
+        if (groupCard) groupCard.remove();
+        const flowRow = document.getElementById('flow-row-' + groupId);
+        if (flowRow) flowRow.remove();
+        calcAllMonths();
     }
-    
-    loadDraft();
-    renderCalendar();
-    renderFilteredDiaryList();
+
+    function addCardSubItem(groupId) {
+        const tbody = document.getElementById(groupId + '-tbody');
+        const tr = document.createElement('tr');
+        tr.innerHTML = `<td><input type="text" class="text-left" value="새 항목" onchange="triggerSave()"></td><td><input type="number" class="card-item-${groupId}" value="0" oninput="calcCardGroup('${groupId}')"></td><td class="text-center"><button class="btn btn-del" onclick="deleteCardSubItem(this, '${groupId}')">X</button></td>`;
+        tbody.appendChild(tr);
+        calcCardGroup(groupId);
+    }
+
+    function deleteCardSubItem(btn, groupId) {
+        btn.closest('tr').remove();
+        calcCardGroup(groupId);
+    }
+
+    function getCardGroupSum(groupId) {
+        let sum = 0;
+        document.querySelectorAll('.card-item-' + groupId).forEach(input => sum += Number(input.value) || 0);
+        return sum;
+    }
+
+    function calcCardGroup(groupId) {
+        const sum = getCardGroupSum(groupId);
+        const totalEl = document.getElementById(groupId + '-total');
+        if (totalEl) totalEl.textContent = formatNumber(sum);
+        document.querySelectorAll('.card-linked-' + groupId).forEach(input => { input.value = sum; });
+        calcAllMonths();
+    }
+
+    function addBankRow() {
+        const tbody = document.getElementById('bank-tbody');
+        const tr = document.createElement('tr');
+        tr.innerHTML = `<td><input type="text" class="text-left" value="새 은행" onchange="triggerSave()"></td><td><input type="text" class="text-left" value="000-0000-0000" onchange="triggerSave()"></td><td><input type="text" class="text-center" value="1일" onchange="triggerSave()"></td><td><input type="number" value="0" onchange="triggerSave()"></td><td class="text-center"><button class="btn btn-del" onclick="deleteRow(this)">X</button></td>`;
+        tbody.appendChild(tr);
+        if (window.triggerSave) window.triggerSave();
+    }
+
+    function addGoalRow() {
+        const tbody = document.getElementById('goal-tbody');
+        const tr = document.createElement('tr');
+        tr.innerHTML = `<td><input type="text" class="text-left" value="새 목표 항목" onchange="triggerSave()"></td><td><select onchange="triggerSave()"><option value="목표" selected>목표</option><option value="상환방법">상환</option><option value="적립방법">적립</option></select></td><td><input type="text" class="text-left" value="계획 입력" onchange="triggerSave()"></td><td class="text-center"><button class="btn btn-del" onclick="deleteRow(this)">X</button></td>`;
+        tbody.appendChild(tr);
+        if (window.triggerSave) window.triggerSave();
+    }
+
+    function calcAllMonths() {
+        const monthHeaders = document.querySelectorAll('.th-month');
+        const totalTds = document.querySelectorAll('#total-tr .total-val');
+        const remTds = document.querySelectorAll('#rem-tr .rem-val');
+        const incomeInputs = document.querySelectorAll('#income-row .flow-inc');
+
+        monthHeaders.forEach((th, colIdx) => {
+            let sum = 0;
+            document.querySelectorAll('#flow-tbody tr:not(#income-row)').forEach(row => {
+                const input = row.children[colIdx + 1]?.querySelector('input');
+                if (input) sum += Number(input.value) || 0;
+            });
+
+            const income = Number(incomeInputs[colIdx] ? incomeInputs[colIdx].value : 0);
+            const remaining = income - sum;
+
+            if (totalTds[colIdx]) totalTds[colIdx].textContent = formatNumber(sum);
+            if (remTds[colIdx]) remTds[colIdx].textContent = formatNumber(remaining);
+        });
+
+        updateChart();
+        if (window.triggerSave) window.triggerSave();
+    }
+
+    function updateChart() {
+        const chartContainer = document.getElementById('card-chart-container');
+        if (!chartContainer) return;
+        chartContainer.innerHTML = '';
+
+        const cardGroups = document.querySelectorAll('#card-groups-container .card');
+        let cardData = [];
+        let maxSum = 0;
+
+        cardGroups.forEach(group => {
+            const groupId = group.id;
+            const titleInput = group.querySelector('.card-title-input');
+            const name = titleInput ? titleInput.value.replace('💳', '').trim() : '카드';
+            const sum = getCardGroupSum(groupId);
+            cardData.push({ name, sum });
+            if (sum > maxSum) maxSum = sum;
+        });
+
+        if (cardData.length === 0) {
+            chartContainer.innerHTML = '<div style="color:#aaa; font-size:12px; text-align:center;">등록된 카드가 없습니다.</div>';
+            return;
+        }
+
+        cardData.forEach(item => {
+            const row = document.createElement('div');
+            row.className = 'chart-row';
+            const percentage = maxSum > 0 ? (item.sum / maxSum) * 100 : 0;
+            row.innerHTML = `<div class="chart-label" title="${item.name}">${item.name}</div><div class="chart-bar-bg"><div class="chart-bar-fill" style="width: ${percentage}%;"></div></div><div class="chart-value">${formatNumber(item.sum)}</div>`;
+            chartContainer.appendChild(row);
+        });
+    }
 </script>
 </body>
 </html>
