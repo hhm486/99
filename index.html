@@ -388,15 +388,31 @@
     </div>
 </div>
 
-<script>
+<script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+    import { getDatabase, ref, push, set, onValue, remove, update } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
+
+    // 1. 파이어베이스 설정 정보
+    const firebaseConfig = {
+        apiKey: "AIzaSyCFrkG08Uai1-6h13yR-gsQSlN68GuZNNw",
+        authDomain: "nsh486.firebaseapp.com",
+        databaseURL: "https://nsh486-default-rtdb.firebaseio.com",
+        projectId: "nsh486",
+        storageBucket: "nsh486.firebasestorage.app",
+        messagingSenderId: "173084611849",
+        appId: "1:173084611849:web:f7f42178b8b3721d0eefd8"
+    };
+
+    // 2. 파이어베이스 초기화
+    const app = initializeApp(firebaseConfig);
+    const db = getDatabase(app);
+    const diariesRef = ref(db, 'diaries');
+
     let currentDate = new Date();
-    
-    // 로컬스토리지에서 이전에 선택해둔 날짜 불러오기 (없으면 오늘 날짜)
     const todayStr = getFormattedDate(new Date());
     let selectedDateStr = localStorage.getItem('selectedDateStr') || todayStr;
-    
     let currentPage = 1;
-    let diaryList = JSON.parse(localStorage.getItem('diaryList')) || [];
+    let diaryList = [];
 
     function getFormattedDate(dateObj) {
         const y = dateObj.getFullYear();
@@ -404,6 +420,130 @@
         const d = String(dateObj.getDate()).padStart(2, '0');
         return `${y}-${m}-${d}`;
     }
+
+    // 3. 파이어베이스 실시간 데이터 수신 (모바일/PC 자동 동기화)
+    onValue(diariesRef, (snapshot) => {
+        const data = snapshot.val();
+        diaryList = [];
+        if (data) {
+            Object.keys(data).forEach(key => {
+                diaryList.push({ id: key, ...data[key] });
+            });
+            // 작성일시 기준 내림차순 정렬
+            diaryList.sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
+        }
+        renderCalendar();
+        renderFilteredDiaryList();
+    });
+
+    // 4. 저장 및 수정
+    window.saveDiary = function(event) {
+        event.preventDefault();
+
+        if (!selectedDateStr) {
+            alert("달력에서 날짜를 먼저 선택해주세요!");
+            return;
+        }
+
+        const editId = document.getElementById('edit-id').value;
+        const title = document.getElementById('diary-title').value;
+        const content = document.getElementById('diary-content').value;
+        const bookTitle = document.getElementById('book-title').value;
+        const bookContent = document.getElementById('book-content').value;
+
+        if (editId) {
+            const targetRef = ref(db, `diaries/${editId}`);
+            update(targetRef, {
+                title, content, bookTitle, bookContent, updatedAt: Date.now()
+            }).then(() => {
+                alert("일기가 수정되었습니다!");
+                resetForm();
+            }).catch(err => alert("수정 실패: " + err.message));
+        } else {
+            const newRef = push(diariesRef);
+            set(newRef, {
+                date: selectedDateStr,
+                title, content, bookTitle, bookContent,
+                createdAt: Date.now()
+            }).then(() => {
+                alert("일기가 저장되었습니다!");
+                currentPage = 1;
+                resetForm();
+            }).catch(err => alert("저장 실패: " + err.message));
+        }
+    };
+
+    // 5. 삭제
+    window.deleteDiary = function(id) {
+        if (confirm("정말 이 일기를 삭제하시겠습니까?")) {
+            const targetRef = ref(db, `diaries/${id}`);
+            remove(targetRef)
+                .then(() => alert("삭제되었습니다."))
+                .catch(err => alert("삭제 실패: " + err.message));
+        }
+    };
+
+    // 6. 수정 모드
+    window.editDiary = function(id) {
+        const entry = diaryList.find(e => e.id === id);
+        if (!entry) return;
+
+        selectedDateStr = entry.date;
+        localStorage.setItem('selectedDateStr', selectedDateStr);
+
+        document.getElementById('edit-id').value = entry.id;
+        document.getElementById('diary-title').value = entry.title || '';
+        document.getElementById('diary-content').value = entry.content || '';
+        document.getElementById('book-title').value = entry.bookTitle || '';
+        document.getElementById('book-content').value = entry.bookContent || '';
+
+        document.getElementById('submit-btn-text').innerText = '수정 완료';
+        document.getElementById('cancel-btn').style.display = 'block';
+
+        saveDraft();
+        renderCalendar();
+        document.getElementById('diaryForm').scrollIntoView({ behavior: 'smooth' });
+    };
+
+    window.resetForm = function() {
+        document.getElementById('diaryForm').reset();
+        document.getElementById('edit-id').value = '';
+        document.getElementById('submit-btn-text').innerText = '저장';
+        document.getElementById('cancel-btn').style.display = 'none';
+        localStorage.removeItem('diaryDraft');
+    };
+
+    window.saveDraft = function() {
+        const draftData = {
+            title: document.getElementById('diary-title').value,
+            content: document.getElementById('diary-content').value,
+            bookTitle: document.getElementById('book-title').value,
+            bookContent: document.getElementById('book-content').value,
+            editId: document.getElementById('edit-id').value
+        };
+        localStorage.setItem('diaryDraft', JSON.stringify(draftData));
+    };
+
+    function loadDraft() {
+        const draft = JSON.parse(localStorage.getItem('diaryDraft'));
+        if (draft) {
+            document.getElementById('diary-title').value = draft.title || '';
+            document.getElementById('diary-content').value = draft.content || '';
+            document.getElementById('book-title').value = draft.bookTitle || '';
+            document.getElementById('book-content').value = draft.bookContent || '';
+            
+            if (draft.editId) {
+                document.getElementById('edit-id').value = draft.editId;
+                document.getElementById('submit-btn-text').innerText = '수정 완료';
+                document.getElementById('cancel-btn').style.display = 'block';
+            }
+        }
+    }
+
+    window.changeMonth = function(delta) {
+        currentDate.setMonth(currentDate.getMonth() + delta);
+        renderCalendar();
+    };
 
     function renderCalendar() {
         const year = currentDate.getFullYear();
@@ -434,18 +574,10 @@
             const dateKey = `${year}-${formattedMonth}-${formattedDay}`;
 
             const hasEntry = diaryList.some(entry => entry.date === dateKey);
-            if (hasEntry) {
-                dateDiv.classList.add('has-entry');
-            }
+            if (hasEntry) dateDiv.classList.add('has-entry');
+            if (selectedDateStr === dateKey) dateDiv.classList.add('selected');
 
-            if (selectedDateStr === dateKey) {
-                dateDiv.classList.add('selected');
-            }
-
-            dateDiv.onclick = function() {
-                selectDate(dateKey);
-            };
-
+            dateDiv.onclick = function() { selectDate(dateKey); };
             grid.appendChild(dateDiv);
         }
     }
@@ -456,128 +588,6 @@
         currentPage = 1;
         renderCalendar();
         renderFilteredDiaryList();
-    }
-
-    function changeMonth(delta) {
-        currentDate.setMonth(currentDate.getMonth() + delta);
-        renderCalendar();
-    }
-
-    // 작성 중인 내용 실시간 임시저장
-    function saveDraft() {
-        const draftData = {
-            title: document.getElementById('diary-title').value,
-            content: document.getElementById('diary-content').value,
-            bookTitle: document.getElementById('book-title').value,
-            bookContent: document.getElementById('book-content').value,
-            editId: document.getElementById('edit-id').value
-        };
-        localStorage.setItem('diaryDraft', JSON.stringify(draftData));
-    }
-
-    // 임시저장된 입력값 복원
-    function loadDraft() {
-        const draft = JSON.parse(localStorage.getItem('diaryDraft'));
-        if (draft) {
-            document.getElementById('diary-title').value = draft.title || '';
-            document.getElementById('diary-content').value = draft.content || '';
-            document.getElementById('book-title').value = draft.bookTitle || '';
-            document.getElementById('book-content').value = draft.bookContent || '';
-            
-            if (draft.editId) {
-                document.getElementById('edit-id').value = draft.editId;
-                document.getElementById('submit-btn-text').innerText = '수정 완료';
-                document.getElementById('cancel-btn').style.display = 'block';
-            }
-        }
-    }
-
-    function saveDiary(event) {
-        event.preventDefault();
-
-        if (!selectedDateStr) {
-            alert("달력에서 날짜를 먼저 선택해주세요!");
-            return;
-        }
-
-        const editId = document.getElementById('edit-id').value;
-        const title = document.getElementById('diary-title').value;
-        const content = document.getElementById('diary-content').value;
-        const bookTitle = document.getElementById('book-title').value;
-        const bookContent = document.getElementById('book-content').value;
-
-        if (editId) {
-            const targetIndex = diaryList.findIndex(entry => entry.id == editId);
-            if (targetIndex !== -1) {
-                diaryList[targetIndex] = {
-                    ...diaryList[targetIndex],
-                    title,
-                    content,
-                    bookTitle,
-                    bookContent
-                };
-                alert("일기가 수정되었습니다!");
-            }
-        } else {
-            const newEntry = {
-                id: Date.now(),
-                date: selectedDateStr,
-                title,
-                content,
-                bookTitle,
-                bookContent
-            };
-            diaryList.unshift(newEntry);
-            currentPage = 1;
-            alert("일기가 저장되었습니다!");
-        }
-
-        localStorage.setItem('diaryList', JSON.stringify(diaryList));
-        localStorage.removeItem('diaryDraft'); // 저장 완료 시 임시저장 데이터 삭제
-
-        resetForm();
-        renderCalendar();
-        renderFilteredDiaryList();
-    }
-
-    function deleteDiary(id) {
-        if (confirm("정말 이 일기를 삭제하시겠습니까?")) {
-            diaryList = diaryList.filter(entry => entry.id !== id);
-            localStorage.setItem('diaryList', JSON.stringify(diaryList));
-            
-            renderCalendar();
-            renderFilteredDiaryList();
-        }
-    }
-
-    function editDiary(id) {
-        const entry = diaryList.find(e => e.id === id);
-        if (!entry) return;
-
-        selectedDateStr = entry.date;
-        localStorage.setItem('selectedDateStr', selectedDateStr);
-
-        document.getElementById('edit-id').value = entry.id;
-        document.getElementById('diary-title').value = entry.title || '';
-        document.getElementById('diary-content').value = entry.content || '';
-        document.getElementById('book-title').value = entry.bookTitle || '';
-        document.getElementById('book-content').value = entry.bookContent || '';
-
-        document.getElementById('submit-btn-text').innerText = '수정 완료';
-        document.getElementById('cancel-btn').style.display = 'block';
-
-        saveDraft(); // 수정 시작 상태도 임시 저장
-        renderCalendar();
-
-        document.getElementById('diaryForm').scrollIntoView({ behavior: 'smooth' });
-    }
-
-    function resetForm() {
-        document.getElementById('diaryForm').reset();
-        document.getElementById('edit-id').value = '';
-        document.getElementById('submit-btn-text').innerText = '저장';
-        document.getElementById('cancel-btn').style.display = 'none';
-        localStorage.removeItem('diaryDraft');
     }
 
     function renderFilteredDiaryList() {
@@ -618,8 +628,8 @@
         item.classList.add('diary-item');
         item.innerHTML = `
             <div class="action-btns">
-                <button class="action-btn edit-btn" onclick="editDiary(${entry.id})">수정</button>
-                <button class="action-btn delete-btn" onclick="deleteDiary(${entry.id})">삭제</button>
+                <button class="action-btn edit-btn" onclick="editDiary('${entry.id}')">수정</button>
+                <button class="action-btn delete-btn" onclick="deleteDiary('${entry.id}')">삭제</button>
             </div>
             <div class="diary-item-date">${entry.date}</div>
             <div class="diary-item-title">${entry.title}</div>
@@ -634,10 +644,7 @@
             prevBtn.classList.add('page-btn');
             prevBtn.innerText = '이전';
             prevBtn.disabled = currentPage === 1;
-            prevBtn.onclick = () => {
-                currentPage--;
-                renderFilteredDiaryList();
-            };
+            prevBtn.onclick = () => { currentPage--; renderFilteredDiaryList(); };
 
             const pageInfo = document.createElement('span');
             pageInfo.classList.add('page-num');
@@ -647,10 +654,7 @@
             nextBtn.classList.add('page-btn');
             nextBtn.innerText = '다음';
             nextBtn.disabled = currentPage === totalPages;
-            nextBtn.onclick = () => {
-                currentPage++;
-                renderFilteredDiaryList();
-            };
+            nextBtn.onclick = () => { currentPage++; renderFilteredDiaryList(); };
 
             paginationContainer.appendChild(prevBtn);
             paginationContainer.appendChild(pageInfo);
@@ -658,7 +662,6 @@
         }
     }
 
-    // 초기 실행
     if (selectedDateStr) {
         const [sYear, sMonth] = selectedDateStr.split('-').map(Number);
         currentDate.setFullYear(sYear, sMonth - 1, 1);
