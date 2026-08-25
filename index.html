@@ -309,7 +309,6 @@
   </style>
 </head>
 <body>
-
   <div class="page-layout">
     <!-- 왼쪽: 만년달력 -->
     <aside class="mini-calendar">
@@ -397,7 +396,9 @@
   </div>
 
   <script>
-    const store = {
+    // LocalStorage에서 데이터를 읽어오거나 초기화
+    const savedStore = localStorage.getItem('neongso_diary_store');
+    const store = savedStore ? JSON.parse(savedStore) : {
       "2026": Array.from({ length: 13 }, () => []),
       "2027": Array.from({ length: 13 }, () => [])
     };
@@ -405,12 +406,23 @@
     let selectedYear = null;
     let currentCalDate = new Date();
 
+    // 데이터를 브라우저 LocalStorage에 물리적으로 저장하는 함수
+    function saveStoreToLocal() {
+      try {
+        localStorage.setItem('neongso_diary_store', JSON.stringify(store));
+      } catch (e) {
+        alert('저장 공간이 부족하거나 이미지 용량이 너무 큽니다!');
+      }
+    }
+
     // 작성된 일기가 있는 모든 날짜 목록 (YYYY-MM-DD)
     function getWrittenDates() {
       const dates = new Set();
       Object.keys(store).forEach(yr => {
         for (let m = 1; m <= 12; m++) {
-          store[yr][m].forEach(item => dates.add(item.date));
+          if (store[yr][m]) {
+            store[yr][m].forEach(item => dates.add(item.date));
+          }
         }
       });
       return dates;
@@ -477,7 +489,7 @@
         actionArea.innerHTML = '<button class="btn-action" onclick="addYearFolder()">+ 연도 추가</button>';
 
         Object.keys(store).sort().forEach(yr => {
-          const totalCount = store[yr].reduce((acc, mList) => acc + mList.length, 0);
+          const totalCount = store[yr].reduce((acc, mList) => acc + (mList ? mList.length : 0), 0);
 
           const card = document.createElement('div');
           card.className = 'folder-card';
@@ -498,7 +510,7 @@
         actionArea.innerHTML = '<button class="btn-action" onclick="goBackToYears()">⬅ 뒤로 가기</button>';
 
         for (let m = 1; m <= 12; m++) {
-          const count = store[selectedYear][m].length;
+          const count = store[selectedYear][m] ? store[selectedYear][m].length : 0;
           const card = document.createElement('div');
           card.className = 'folder-card';
           card.onclick = () => openFolderModal(selectedYear, m);
@@ -522,6 +534,7 @@
       const yr = prompt('추가할 연도를 입력하세요 (예: 2028):');
       if (yr && !store[yr]) {
         store[yr] = Array.from({ length: 13 }, () => []);
+        saveStoreToLocal();
         renderFolders();
       } else if (store[yr]) {
         alert('이미 존재하는 연도입니다!');
@@ -549,6 +562,9 @@
       if (!store[yr]) {
         store[yr] = Array.from({ length: 13 }, () => []);
       }
+      if (!store[yr][m]) {
+        store[yr][m] = [];
+      }
 
       const newEntry = {
         id: Date.now(),
@@ -562,6 +578,7 @@
 
       const processSave = () => {
         store[yr][m].unshift(newEntry);
+        saveStoreToLocal(); // 저장 처리
         renderFolders();
         renderCalendar();
         alert(`${yr}년 ${m}월 폴더에 기록되었습니다! ✨`);
@@ -594,7 +611,7 @@
       modalTitle.innerText = `📂 ${yr}년 ${m}월 일기`;
       modalBody.innerHTML = '';
 
-      const items = store[yr][m];
+      const items = store[yr] && store[yr][m] ? store[yr][m] : [];
 
       if (items.length === 0) {
         modalBody.innerHTML = '<p style="text-align:center; color:#999; padding: 20px 0;">작성된 일기가 없습니다. 🌺</p>';
@@ -627,6 +644,7 @@
     function deleteDiary(yr, m, diaryId) {
       if (confirm('정말로 이 일기를 삭제하시겠습니까? 🗑️')) {
         store[yr][m] = store[yr][m].filter(item => item.id !== diaryId);
+        saveStoreToLocal(); // 삭제 내역 업데이트 저장
         renderFolders();
         renderCalendar();
         openFolderModal(yr, m);
@@ -642,6 +660,5 @@
     renderCalendar();
     renderFolders();
   </script>
-
 </body>
 </html>
