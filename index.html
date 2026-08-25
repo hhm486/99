@@ -1,664 +1,672 @@
 <!DOCTYPE html>
 <html lang="ko">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>능소화 일기장 🌺</title>
-  <style>
-    :root {
-      --bg-color: #fff0f5;
-      --card-bg: #ffffff;
-      --primary: #ffb6c1;
-      --primary-hover: #ff94a6;
-      --accent: #ff69b4;
-      --text-color: #4a4a4a;
-      --border-color: #ffd1dc;
-    }
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>능소화 🌺</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Pretendard', 'Malgun Gothic', sans-serif;
+        }
 
-    * { box-sizing: border-box; }
+        body {
+            background-color: #fff0f3;
+            display: flex;
+            justify-content: center;
+            align-items: flex-start;
+            min-height: 100vh;
+            padding: 30px 20px;
+        }
 
-    body {
-      font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-      background-color: var(--bg-color);
-      color: var(--text-color);
-      margin: 0;
-      padding: 16px;
-    }
+        .main-container {
+            display: flex;
+            flex-direction: column;
+            gap: 25px;
+            max-width: 500px;
+            width: 100%;
+        }
 
-    .page-layout {
-      display: flex;
-      gap: 20px;
-      max-width: 1000px;
-      margin: 0 auto;
-      align-items: flex-start;
-    }
+        /* 공통 카드 스타일 */
+        .card {
+            background: #ffffff;
+            border-radius: 20px;
+            padding: 25px;
+            border: 2px solid #fecdd3;
+            box-shadow: 0 10px 25px rgba(244, 63, 94, 0.08);
+        }
 
-    /* 왼쪽 사이드바: 만년달력 */
-    .mini-calendar {
-      background: var(--card-bg);
-      padding: 16px;
-      border-radius: 18px;
-      border: 2px solid var(--border-color);
-      box-shadow: 0 4px 12px rgba(255, 182, 193, 0.2);
-      width: 240px;
-      flex-shrink: 0;
-    }
+        /* 1. 상단 달력 스타일 */
+        .calendar-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            color: #e11d48;
+            font-weight: bold;
+        }
 
-    .calendar-header {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      margin-bottom: 12px;
-    }
+        .calendar-header button {
+            background: #ffe4e6;
+            border: none;
+            color: #e11d48;
+            padding: 8px 16px;
+            border-radius: 10px;
+            cursor: pointer;
+            font-weight: bold;
+            transition: 0.2s;
+        }
 
-    .calendar-header h2 {
-      font-size: 0.95rem;
-      margin: 0;
-      color: var(--accent);
-    }
+        .calendar-header button:hover {
+            background: #fecdd3;
+        }
 
-    .calendar-header button {
-      background: none;
-      border: none;
-      color: var(--accent);
-      font-weight: bold;
-      cursor: pointer;
-      font-size: 1rem;
-      padding: 4px 8px;
-    }
+        .calendar-grid {
+            display: grid;
+            grid-template-columns: repeat(7, 1fr);
+            gap: 6px;
+            text-align: center;
+        }
 
-    .calendar-grid {
-      display: grid;
-      grid-template-columns: repeat(7, 1fr);
-      gap: 4px;
-      text-align: center;
-      font-size: 0.8rem;
-    }
+        .day-name {
+            font-weight: bold;
+            color: #fb7185;
+            padding-bottom: 8px;
+            font-size: 13px;
+        }
 
-    .calendar-grid div { padding: 4px 0; }
-    .day-name { font-weight: bold; color: #888; }
-    .day-name:first-child { color: #ff6b6b; }
-    .day-name:last-child { color: #4d96ff; }
+        .day-name.sun { color: #f43f5e; }
+        .day-name.sat { color: #818cf8; }
 
-    .day-number {
-      border-radius: 8px;
-      cursor: pointer;
-      min-height: 34px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      position: relative;
-      transition: background-color 0.2s;
-    }
+        .date-cell {
+            position: relative;
+            padding: 10px 0;
+            border-radius: 10px;
+            cursor: pointer;
+            font-size: 14px;
+            color: #555;
+            transition: all 0.2s;
+        }
 
-    .day-number:hover { background-color: var(--bg-color); }
-    .day-number.today {
-      background-color: #ffe4e1;
-      font-weight: bold;
-    }
+        .date-cell:hover:not(.empty) {
+            background-color: #ffe4e6;
+            color: #e11d48;
+            font-weight: bold;
+        }
 
-    /* 하트 음영 효과 */
-    .day-number.has-diary {
-      background-color: #ffd1dc;
-      color: #d63031;
-      font-weight: bold;
-      box-shadow: inset 0 0 6px rgba(255, 105, 180, 0.4);
-    }
-    .day-number.has-diary::after {
-      content: '♥';
-      position: absolute;
-      font-size: 1.4rem;
-      color: rgba(255, 105, 180, 0.25);
-      z-index: 0;
-      pointer-events: none;
-    }
-    .day-number span {
-      position: relative;
-      z-index: 1;
-    }
+        .date-cell.selected {
+            background-color: #fda4af;
+            color: white;
+            font-weight: bold;
+        }
 
-    /* 메인 영역 */
-    .container {
-      flex-grow: 1;
-      width: 100%;
-    }
+        /* 밑줄 스타일 */
+        .date-cell.has-entry::after {
+            content: '';
+            position: absolute;
+            bottom: 4px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 16px;
+            height: 3px;
+            background-color: #fb7185;
+            border-radius: 2px;
+        }
 
-    header {
-      text-align: center;
-      margin-bottom: 20px;
-    }
+        .date-cell.selected.has-entry::after {
+            background-color: #ffffff;
+        }
 
-    header h1 {
-      color: var(--accent);
-      font-size: 1.8rem;
-      margin: 0 0 6px 0;
-    }
+        /* 2. 섹션 타이틀 */
+        .section-title {
+            text-align: center;
+            color: #e11d48;
+            margin-bottom: 20px;
+            font-size: 20px;
+        }
 
-    header p {
-      color: #888;
-      font-size: 0.85rem;
-      margin: 0;
-    }
+        /* 폼 스타일 */
+        .form-group {
+            margin-bottom: 16px;
+        }
 
-    .diary-form {
-      background: var(--card-bg);
-      padding: 18px;
-      border-radius: 20px;
-      box-shadow: 0 6px 16px rgba(255, 182, 193, 0.25);
-      border: 2px solid var(--border-color);
-      margin-bottom: 24px;
-    }
+        label {
+            display: block;
+            font-weight: bold;
+            color: #f43f5e;
+            margin-bottom: 6px;
+            font-size: 13px;
+        }
 
-    .form-group { margin-bottom: 14px; }
+        input[type="text"], textarea {
+            width: 100%;
+            padding: 12px;
+            border: 1.5px solid #fecdd3;
+            border-radius: 10px;
+            background-color: #fff1f2;
+            font-size: 13px;
+            color: #333;
+            outline: none;
+            transition: all 0.3s ease;
+        }
 
-    label {
-      display: block;
-      font-weight: bold;
-      margin-bottom: 6px;
-      color: var(--accent);
-      font-size: 0.85rem;
-    }
+        input:focus, textarea:focus {
+            border-color: #fda4af;
+            background-color: #ffffff;
+            box-shadow: 0 0 6px rgba(251, 113, 133, 0.25);
+        }
 
-    input[type="text"],
-    input[type="date"],
-    textarea,
-    input[type="file"] {
-      width: 100%;
-      padding: 10px 12px;
-      border: 1.5px solid var(--border-color);
-      border-radius: 12px;
-      outline: none;
-      font-size: 0.9rem;
-      background-color: #fffafc;
-    }
+        textarea {
+            resize: vertical;
+            min-height: 90px;
+        }
 
-    textarea { height: 70px; resize: vertical; }
+        .btn-group {
+            display: flex;
+            gap: 10px;
+            margin-top: 5px;
+        }
 
-    .divider {
-      border-top: 1px dashed var(--border-color);
-      margin: 16px 0;
-    }
+        .submit-btn {
+            flex: 1;
+            padding: 14px;
+            background-color: #fda4af;
+            color: white;
+            border: none;
+            border-radius: 10px;
+            font-size: 15px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
 
-    .btn-submit {
-      width: 100%;
-      background-color: var(--primary);
-      color: white;
-      border: none;
-      padding: 14px;
-      border-radius: 12px;
-      font-size: 1rem;
-      font-weight: bold;
-      cursor: pointer;
-    }
+        .submit-btn:hover {
+            background-color: #f43f5e;
+        }
 
-    .btn-submit:active { background-color: var(--primary-hover); }
+        .cancel-btn {
+            padding: 14px 20px;
+            background-color: #e5e7eb;
+            color: #4b5563;
+            border: none;
+            border-radius: 10px;
+            font-size: 15px;
+            font-weight: bold;
+            cursor: pointer;
+            display: none;
+        }
 
-    /* 폴더 이동 영역 */
-    .folder-navigation {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      margin-bottom: 12px;
-    }
+        .cancel-btn:hover {
+            background-color: #d1d5db;
+        }
 
-    .breadcrumb {
-      font-weight: bold;
-      color: var(--accent);
-      font-size: 1.05rem;
-    }
+        /* 3. 일기 데이터 출력 영역 */
+        .diary-item {
+            background-color: #fff1f2;
+            border: 1.5px solid #fecdd3;
+            border-radius: 12px;
+            padding: 18px;
+            position: relative;
+        }
 
-    .btn-action {
-      background: #fff0f5;
-      border: 1.5px solid var(--border-color);
-      color: var(--accent);
-      padding: 6px 12px;
-      border-radius: 10px;
-      font-size: 0.8rem;
-      font-weight: bold;
-      cursor: pointer;
-    }
+        .diary-item-date {
+            font-size: 12px;
+            font-weight: bold;
+            color: #fb7185;
+            margin-bottom: 6px;
+        }
 
-    .folder-grid {
-      display: grid;
-      grid-template-columns: repeat(4, 1fr);
-      gap: 10px;
-      margin-bottom: 20px;
-    }
+        .diary-item-title {
+            font-size: 16px;
+            font-weight: bold;
+            color: #e11d48;
+            margin-bottom: 10px;
+            padding-right: 80px;
+        }
 
-    .folder-card {
-      background: var(--card-bg);
-      border: 2px solid var(--border-color);
-      border-radius: 14px;
-      padding: 12px 8px;
-      text-align: center;
-      cursor: pointer;
-      transition: transform 0.2s;
-    }
+        .diary-item-content {
+            font-size: 14px;
+            color: #444;
+            white-space: pre-wrap;
+            line-height: 1.5;
+            margin-bottom: 12px;
+        }
 
-    .folder-card:hover { transform: translateY(-2px); border-color: var(--accent); }
-    .folder-card .folder-icon { font-size: 1.4rem; margin-bottom: 4px; }
-    .folder-card .folder-title { font-weight: bold; font-size: 0.9rem; color: var(--text-color); }
-    .folder-card .folder-count { font-size: 0.75rem; color: var(--accent); margin-top: 2px; }
+        .book-section {
+            background-color: #ffe4e6;
+            padding: 12px;
+            border-radius: 8px;
+            font-size: 13px;
+            border: 1px solid #fecdd3;
+        }
 
-    /* 모달 */
-    .modal {
-      display: none;
-      position: fixed;
-      top: 0; left: 0; width: 100%; height: 100%;
-      background-color: rgba(0, 0, 0, 0.4);
-      justify-content: center;
-      align-items: center;
-      z-index: 1000;
-      padding: 16px;
-    }
+        .book-title-text {
+            font-weight: bold;
+            color: #f43f5e;
+            margin-bottom: 4px;
+        }
 
-    .modal-content {
-      background: white;
-      border-radius: 20px;
-      width: 100%;
-      max-width: 500px;
-      max-height: 80vh;
-      overflow-y: auto;
-      padding: 20px;
-      border: 2px solid var(--border-color);
-    }
+        .book-content-text {
+            color: #666;
+            white-space: pre-wrap;
+        }
 
-    .modal-header {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      border-bottom: 2px solid var(--border-color);
-      padding-bottom: 10px;
-      margin-bottom: 15px;
-    }
+        /* 수정 및 삭제 버튼 영역 */
+        .action-btns {
+            position: absolute;
+            top: 15px;
+            right: 15px;
+            display: flex;
+            gap: 8px;
+        }
 
-    .modal-header h2 { margin: 0; color: var(--accent); font-size: 1.2rem; }
-    .close-btn { background: none; border: none; font-size: 1.2rem; cursor: pointer; color: #888; }
+        .action-btn {
+            background: none;
+            border: none;
+            cursor: pointer;
+            font-size: 12px;
+            font-weight: bold;
+            transition: color 0.2s;
+        }
 
-    .diary-item {
-      background: #fff0f5;
-      border-radius: 12px;
-      padding: 12px;
-      margin-bottom: 12px;
-      border-left: 4px solid var(--accent);
-    }
+        .edit-btn {
+            color: #fb7185;
+        }
 
-    .diary-item-header { display: flex; justify-content: space-between; align-items: center; }
-    .diary-item .date { font-size: 0.75rem; color: var(--accent); font-weight: bold; }
-    .btn-delete { background: #ff6b6b; color: white; border: none; border-radius: 6px; font-size: 0.7rem; padding: 3px 8px; cursor: pointer; }
-    .diary-item h3 { margin: 6px 0 4px 0; font-size: 0.95rem; }
-    .diary-item p { margin: 0; font-size: 0.85rem; line-height: 1.4; white-space: pre-wrap; }
-    
-    .book-box {
-      margin-top: 8px;
-      padding: 8px;
-      background: #fff;
-      border-radius: 8px;
-      border: 1px dashed var(--accent);
-    }
-    .book-box-title { font-weight: bold; font-size: 0.8rem; color: #e84393; }
-    .book-box-content { font-size: 0.8rem; color: #666; margin-top: 2px; }
+        .edit-btn:hover {
+            color: #e11d48;
+        }
 
-    .diary-item img { max-width: 100%; border-radius: 8px; margin-top: 8px; }
+        .delete-btn {
+            color: #fda4af;
+        }
 
-    @media (max-width: 768px) {
-      .page-layout { flex-direction: column; align-items: stretch; gap: 16px; }
-      .mini-calendar { width: 100%; }
-      .folder-grid { grid-template-columns: repeat(2, 1fr); }
-    }
-  </style>
+        .delete-btn:hover {
+            color: #f43f5e;
+        }
+
+        .no-data {
+            text-align: center;
+            color: #fda4af;
+            font-size: 14px;
+            padding: 10px 0;
+        }
+
+        /* 4. 페이지네이션 스타일 */
+        .pagination {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 12px;
+            margin-top: 15px;
+        }
+
+        .page-btn {
+            background-color: #ffe4e6;
+            border: none;
+            color: #e11d48;
+            padding: 8px 16px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 13px;
+            font-weight: bold;
+        }
+
+        .page-btn:disabled {
+            opacity: 0.4;
+            cursor: default;
+        }
+
+        .page-num {
+            font-size: 14px;
+            color: #f43f5e;
+            font-weight: bold;
+        }
+    </style>
 </head>
 <body>
-  <div class="page-layout">
-    <!-- 왼쪽: 만년달력 -->
-    <aside class="mini-calendar">
-      <div class="calendar-header">
-        <button onclick="prevMonth()">&lt;</button>
-        <h2 id="calendar-title"></h2>
-        <button onclick="nextMonth()">&gt;</button>
-      </div>
-      <div class="calendar-grid">
-        <div class="day-name">일</div>
-        <div class="day-name">월</div>
-        <div class="day-name">화</div>
-        <div class="day-name">수</div>
-        <div class="day-name">목</div>
-        <div class="day-name">금</div>
-        <div class="day-name">토</div>
-      </div>
-      <div class="calendar-grid" id="calendar-body"></div>
-    </aside>
 
-    <!-- 메인 영역 -->
-    <main class="container">
-      <header>
-        <h1>🌺 능소화 🌺</h1>
-        <p>하늘을 업신여기는 꽃처럼 당당하고 예쁜 하루를 기록해요</p>
-      </header>
-
-      <!-- 일기 작성 폼 -->
-      <div class="diary-form">
-        <div class="form-group">
-          <label for="diary-date">날짜</label>
-          <input type="date" id="diary-date">
+<div class="main-container">
+    <!-- [1] 달력 카드 -->
+    <div class="card">
+        <div class="calendar-header">
+            <button onclick="changeMonth(-1)">이전</button>
+            <h2 id="monthYearTitle"></h2>
+            <button onclick="changeMonth(1)">다음</button>
         </div>
-
-        <div class="form-group">
-          <label for="diary-title">일기 제목</label>
-          <input type="text" id="diary-title" placeholder="오늘의 제목을 입력하세요">
+        <div class="calendar-grid" id="calendarGrid">
+            <div class="day-name sun">일</div>
+            <div class="day-name">월</div>
+            <div class="day-name">화</div>
+            <div class="day-name">수</div>
+            <div class="day-name">목</div>
+            <div class="day-name">금</div>
+            <div class="day-name sat">토</div>
         </div>
-
-        <div class="form-group">
-          <label for="diary-content">일기 내용</label>
-          <textarea id="diary-content" placeholder="어떤 일이 있었나요?"></textarea>
-        </div>
-
-        <div class="divider"></div>
-
-        <div class="form-group">
-          <label for="book-title">📖 책 제목 (선택)</label>
-          <input type="text" id="book-title" placeholder="읽은 책이 있다면 제목을 적어주세요">
-        </div>
-
-        <div class="form-group">
-          <label for="book-content">📖 책 내용 / 인상 깊은 구절 (선택)</label>
-          <textarea id="book-content" placeholder="감명 깊었던 내용을 남겨보세요"></textarea>
-        </div>
-
-        <div class="form-group">
-          <label for="diary-image">사진 첨부</label>
-          <input type="file" id="diary-image" accept="image/*">
-        </div>
-
-        <button class="btn-submit" onclick="saveDiary()">일기 남기기 ✨</button>
-      </div>
-
-      <!-- 능소의 추억 (연도/월 계층형 폴더) -->
-      <div class="folder-navigation">
-        <div class="breadcrumb" id="breadcrumb">🌺 능소의 추억</div>
-        <div id="folder-action-area">
-          <button class="btn-action" onclick="addYearFolder()">+ 연도 추가</button>
-        </div>
-      </div>
-      <div class="folder-grid" id="folder-grid"></div>
-    </main>
-  </div>
-
-  <!-- 일기 목록 모달 -->
-  <div class="modal" id="diary-modal">
-    <div class="modal-content">
-      <div class="modal-header">
-        <h2 id="modal-title">일기 목록</h2>
-        <button class="close-btn" onclick="closeModal()">✕</button>
-      </div>
-      <div id="modal-body"></div>
     </div>
-  </div>
 
-  <script>
-    // LocalStorage에서 데이터를 읽어오거나 초기화
-    const savedStore = localStorage.getItem('neongso_diary_store');
-    const store = savedStore ? JSON.parse(savedStore) : {
-      "2026": Array.from({ length: 13 }, () => []),
-      "2027": Array.from({ length: 13 }, () => [])
-    };
+    <!-- [2] 일기 작성 카드 -->
+    <div class="card">
+        <h2 class="section-title">🌺 능소화 🌺</h2>
 
-    let selectedYear = null;
-    let currentCalDate = new Date();
-
-    // 데이터를 브라우저 LocalStorage에 물리적으로 저장하는 함수
-    function saveStoreToLocal() {
-      try {
-        localStorage.setItem('neongso_diary_store', JSON.stringify(store));
-      } catch (e) {
-        alert('저장 공간이 부족하거나 이미지 용량이 너무 큽니다!');
-      }
-    }
-
-    // 작성된 일기가 있는 모든 날짜 목록 (YYYY-MM-DD)
-    function getWrittenDates() {
-      const dates = new Set();
-      Object.keys(store).forEach(yr => {
-        for (let m = 1; m <= 12; m++) {
-          if (store[yr][m]) {
-            store[yr][m].forEach(item => dates.add(item.date));
-          }
-        }
-      });
-      return dates;
-    }
-
-    // --- 만년달력 ---
-    function renderCalendar() {
-      const year = currentCalDate.getFullYear();
-      const month = currentCalDate.getMonth();
-
-      document.getElementById('calendar-title').innerText = `${year}년 ${month + 1}월`;
-
-      const firstDay = new Date(year, month, 1).getDay();
-      const lastDate = new Date(year, month + 1, 0).getDate();
-
-      const calendarBody = document.getElementById('calendar-body');
-      calendarBody.innerHTML = '';
-
-      for (let i = 0; i < firstDay; i++) {
-        calendarBody.appendChild(document.createElement('div'));
-      }
-
-      const today = new Date();
-      const writtenDates = getWrittenDates();
-
-      for (let day = 1; day <= lastDate; day++) {
-        const dayCell = document.createElement('div');
-        dayCell.className = 'day-number';
-
-        const formattedMonth = String(month + 1).padStart(2, '0');
-        const formattedDay = String(day).padStart(2, '0');
-        const fullDateStr = `${year}-${formattedMonth}-${formattedDay}`;
-
-        dayCell.innerHTML = `<span>${day}</span>`;
-
-        if (writtenDates.has(fullDateStr)) {
-          dayCell.classList.add('has-diary');
-        }
-
-        if (year === today.getFullYear() && month === today.getMonth() && day === today.getDate()) {
-          dayCell.classList.add('today');
-        }
-
-        dayCell.onclick = () => {
-          document.getElementById('diary-date').value = fullDateStr;
-        };
-
-        calendarBody.appendChild(dayCell);
-      }
-    }
-
-    function prevMonth() { currentCalDate.setMonth(currentCalDate.getMonth() - 1); renderCalendar(); }
-    function nextMonth() { currentCalDate.setMonth(currentCalDate.getMonth() + 1); renderCalendar(); }
-
-    // --- 폴더 계층 구조 렌더링 ---
-    function renderFolders() {
-      const grid = document.getElementById('folder-grid');
-      const breadcrumb = document.getElementById('breadcrumb');
-      const actionArea = document.getElementById('folder-action-area');
-      grid.innerHTML = '';
-
-      if (selectedYear === null) {
-        breadcrumb.innerText = '🌺 능소의 추억';
-        actionArea.innerHTML = '<button class="btn-action" onclick="addYearFolder()">+ 연도 추가</button>';
-
-        Object.keys(store).sort().forEach(yr => {
-          const totalCount = store[yr].reduce((acc, mList) => acc + (mList ? mList.length : 0), 0);
-
-          const card = document.createElement('div');
-          card.className = 'folder-card';
-          card.onclick = () => {
-            selectedYear = yr;
-            renderFolders();
-          };
-          card.innerHTML = `
-            <div class="folder-icon">📁</div>
-            <div class="folder-title">${yr}년</div>
-            <div class="folder-count">${totalCount}개의 일기</div>
-          `;
-          grid.appendChild(card);
-        });
-
-      } else {
-        breadcrumb.innerText = `🌺 능소의 추억 > ${selectedYear}년`;
-        actionArea.innerHTML = '<button class="btn-action" onclick="goBackToYears()">⬅ 뒤로 가기</button>';
-
-        for (let m = 1; m <= 12; m++) {
-          const count = store[selectedYear][m] ? store[selectedYear][m].length : 0;
-          const card = document.createElement('div');
-          card.className = 'folder-card';
-          card.onclick = () => openFolderModal(selectedYear, m);
-
-          card.innerHTML = `
-            <div class="folder-icon">📁</div>
-            <div class="folder-title">${m}월</div>
-            <div class="folder-count">${count}개의 일기</div>
-          `;
-          grid.appendChild(card);
-        }
-      }
-    }
-
-    function goBackToYears() {
-      selectedYear = null;
-      renderFolders();
-    }
-
-    function addYearFolder() {
-      const yr = prompt('추가할 연도를 입력하세요 (예: 2028):');
-      if (yr && !store[yr]) {
-        store[yr] = Array.from({ length: 13 }, () => []);
-        saveStoreToLocal();
-        renderFolders();
-      } else if (store[yr]) {
-        alert('이미 존재하는 연도입니다!');
-      }
-    }
-
-    // --- 일기 데이터 저장 ---
-    function saveDiary() {
-      const dateVal = document.getElementById('diary-date').value;
-      const title = document.getElementById('diary-title').value;
-      const content = document.getElementById('diary-content').value;
-      const bookTitle = document.getElementById('book-title').value;
-      const bookContent = document.getElementById('book-content').value;
-      const imageInput = document.getElementById('diary-image');
-
-      if (!dateVal || !title || !content) {
-        alert('날짜, 일기 제목, 일기 내용을 작성해 주세요! 🌺');
-        return;
-      }
-
-      const parts = dateVal.split('-');
-      const yr = parts[0];
-      const m = parseInt(parts[1], 10);
-
-      if (!store[yr]) {
-        store[yr] = Array.from({ length: 13 }, () => []);
-      }
-      if (!store[yr][m]) {
-        store[yr][m] = [];
-      }
-
-      const newEntry = {
-        id: Date.now(),
-        date: dateVal,
-        title: title,
-        content: content,
-        bookTitle: bookTitle,
-        bookContent: bookContent,
-        imgSrc: null
-      };
-
-      const processSave = () => {
-        store[yr][m].unshift(newEntry);
-        saveStoreToLocal(); // 저장 처리
-        renderFolders();
-        renderCalendar();
-        alert(`${yr}년 ${m}월 폴더에 기록되었습니다! ✨`);
-
-        document.getElementById('diary-title').value = '';
-        document.getElementById('diary-content').value = '';
-        document.getElementById('book-title').value = '';
-        document.getElementById('book-content').value = '';
-        document.getElementById('diary-image').value = '';
-      };
-
-      if (imageInput.files && imageInput.files[0]) {
-        const reader = new FileReader();
-        reader.onload = (e) => {
-          newEntry.imgSrc = e.target.result;
-          processSave();
-        };
-        reader.readAsDataURL(imageInput.files[0]);
-      } else {
-        processSave();
-      }
-    }
-
-    // --- 일기 모달 및 삭제 ---
-    function openFolderModal(yr, m) {
-      const modal = document.getElementById('diary-modal');
-      const modalTitle = document.getElementById('modal-title');
-      const modalBody = document.getElementById('modal-body');
-
-      modalTitle.innerText = `📂 ${yr}년 ${m}월 일기`;
-      modalBody.innerHTML = '';
-
-      const items = store[yr] && store[yr][m] ? store[yr][m] : [];
-
-      if (items.length === 0) {
-        modalBody.innerHTML = '<p style="text-align:center; color:#999; padding: 20px 0;">작성된 일기가 없습니다. 🌺</p>';
-      } else {
-        items.forEach(item => {
-          const div = document.createElement('div');
-          div.className = 'diary-item';
-          div.innerHTML = `
-            <div class="diary-item-header">
-              <span class="date">🗓️ ${item.date}</span>
-              <button class="btn-delete" onclick="deleteDiary('${yr}', ${m}, ${item.id})">삭제</button>
+        <form id="diaryForm" onsubmit="saveDiary(event)">
+            <input type="hidden" id="edit-id">
+            
+            <div class="form-group">
+                <label for="diary-title">일기 제목</label>
+                <input type="text" id="diary-title" oninput="saveDraft()" required>
             </div>
-            <h3>${item.title}</h3>
-            <p>${item.content}</p>
-            ${item.bookTitle ? `
-              <div class="book-box">
-                <div class="book-box-title">📖 읽은 책: ${item.bookTitle}</div>
-                ${item.bookContent ? `<div class="book-box-content">${item.bookContent}</div>` : ''}
-              </div>
-            ` : ''}
-            ${item.imgSrc ? `<img src="${item.imgSrc}" alt="첨부사진">` : ''}
-          `;
-          modalBody.appendChild(div);
-        });
-      }
 
-      modal.style.display = 'flex';
+            <div class="form-group">
+                <label for="diary-content">일기 내용</label>
+                <textarea id="diary-content" oninput="saveDraft()" required></textarea>
+            </div>
+
+            <div class="form-group">
+                <label for="book-title">책 제목</label>
+                <input type="text" id="book-title" oninput="saveDraft()">
+            </div>
+
+            <div class="form-group">
+                <label for="book-content">책 내용</label>
+                <textarea id="book-content" oninput="saveDraft()"></textarea>
+            </div>
+
+            <div class="btn-group">
+                <button type="submit" class="submit-btn" id="submit-btn-text">저장</button>
+                <button type="button" class="cancel-btn" id="cancel-btn" onclick="resetForm()">취소</button>
+            </div>
+        </form>
+    </div>
+
+    <!-- [3] 일기 출력 카드 -->
+    <div class="card">
+        <div id="allDiaryList"></div>
+        <div class="pagination" id="paginationControls"></div>
+    </div>
+</div>
+
+<script>
+    let currentDate = new Date();
+    
+    // 로컬스토리지에서 이전에 선택해둔 날짜 불러오기 (없으면 오늘 날짜)
+    const todayStr = getFormattedDate(new Date());
+    let selectedDateStr = localStorage.getItem('selectedDateStr') || todayStr;
+    
+    let currentPage = 1;
+    let diaryList = JSON.parse(localStorage.getItem('diaryList')) || [];
+
+    function getFormattedDate(dateObj) {
+        const y = dateObj.getFullYear();
+        const m = String(dateObj.getMonth() + 1).padStart(2, '0');
+        const d = String(dateObj.getDate()).padStart(2, '0');
+        return `${y}-${m}-${d}`;
     }
 
-    function deleteDiary(yr, m, diaryId) {
-      if (confirm('정말로 이 일기를 삭제하시겠습니까? 🗑️')) {
-        store[yr][m] = store[yr][m].filter(item => item.id !== diaryId);
-        saveStoreToLocal(); // 삭제 내역 업데이트 저장
-        renderFolders();
+    function renderCalendar() {
+        const year = currentDate.getFullYear();
+        const month = currentDate.getMonth();
+
+        document.getElementById('monthYearTitle').innerText = `${year}년 ${month + 1}월`;
+
+        const firstDay = new Date(year, month, 1).getDay();
+        const lastDate = new Date(year, month + 1, 0).getDate();
+        const grid = document.getElementById('calendarGrid');
+        
+        const cells = grid.querySelectorAll('.date-cell');
+        cells.forEach(cell => cell.remove());
+
+        for (let i = 0; i < firstDay; i++) {
+            const emptyDiv = document.createElement('div');
+            emptyDiv.classList.add('date-cell', 'empty');
+            grid.appendChild(emptyDiv);
+        }
+
+        for (let day = 1; day <= lastDate; day++) {
+            const dateDiv = document.createElement('div');
+            dateDiv.classList.add('date-cell');
+            dateDiv.innerText = day;
+
+            const formattedMonth = String(month + 1).padStart(2, '0');
+            const formattedDay = String(day).padStart(2, '0');
+            const dateKey = `${year}-${formattedMonth}-${formattedDay}`;
+
+            const hasEntry = diaryList.some(entry => entry.date === dateKey);
+            if (hasEntry) {
+                dateDiv.classList.add('has-entry');
+            }
+
+            if (selectedDateStr === dateKey) {
+                dateDiv.classList.add('selected');
+            }
+
+            dateDiv.onclick = function() {
+                selectDate(dateKey);
+            };
+
+            grid.appendChild(dateDiv);
+        }
+    }
+
+    function selectDate(dateKey) {
+        selectedDateStr = dateKey;
+        localStorage.setItem('selectedDateStr', selectedDateStr);
+        currentPage = 1;
         renderCalendar();
-        openFolderModal(yr, m);
-      }
+        renderFilteredDiaryList();
     }
 
-    function closeModal() {
-      document.getElementById('diary-modal').style.display = 'none';
+    function changeMonth(delta) {
+        currentDate.setMonth(currentDate.getMonth() + delta);
+        renderCalendar();
     }
 
-    // 초기화
-    document.getElementById('diary-date').valueAsDate = new Date();
+    // 작성 중인 내용 실시간 임시저장
+    function saveDraft() {
+        const draftData = {
+            title: document.getElementById('diary-title').value,
+            content: document.getElementById('diary-content').value,
+            bookTitle: document.getElementById('book-title').value,
+            bookContent: document.getElementById('book-content').value,
+            editId: document.getElementById('edit-id').value
+        };
+        localStorage.setItem('diaryDraft', JSON.stringify(draftData));
+    }
+
+    // 임시저장된 입력값 복원
+    function loadDraft() {
+        const draft = JSON.parse(localStorage.getItem('diaryDraft'));
+        if (draft) {
+            document.getElementById('diary-title').value = draft.title || '';
+            document.getElementById('diary-content').value = draft.content || '';
+            document.getElementById('book-title').value = draft.bookTitle || '';
+            document.getElementById('book-content').value = draft.bookContent || '';
+            
+            if (draft.editId) {
+                document.getElementById('edit-id').value = draft.editId;
+                document.getElementById('submit-btn-text').innerText = '수정 완료';
+                document.getElementById('cancel-btn').style.display = 'block';
+            }
+        }
+    }
+
+    function saveDiary(event) {
+        event.preventDefault();
+
+        if (!selectedDateStr) {
+            alert("달력에서 날짜를 먼저 선택해주세요!");
+            return;
+        }
+
+        const editId = document.getElementById('edit-id').value;
+        const title = document.getElementById('diary-title').value;
+        const content = document.getElementById('diary-content').value;
+        const bookTitle = document.getElementById('book-title').value;
+        const bookContent = document.getElementById('book-content').value;
+
+        if (editId) {
+            const targetIndex = diaryList.findIndex(entry => entry.id == editId);
+            if (targetIndex !== -1) {
+                diaryList[targetIndex] = {
+                    ...diaryList[targetIndex],
+                    title,
+                    content,
+                    bookTitle,
+                    bookContent
+                };
+                alert("일기가 수정되었습니다!");
+            }
+        } else {
+            const newEntry = {
+                id: Date.now(),
+                date: selectedDateStr,
+                title,
+                content,
+                bookTitle,
+                bookContent
+            };
+            diaryList.unshift(newEntry);
+            currentPage = 1;
+            alert("일기가 저장되었습니다!");
+        }
+
+        localStorage.setItem('diaryList', JSON.stringify(diaryList));
+        localStorage.removeItem('diaryDraft'); // 저장 완료 시 임시저장 데이터 삭제
+
+        resetForm();
+        renderCalendar();
+        renderFilteredDiaryList();
+    }
+
+    function deleteDiary(id) {
+        if (confirm("정말 이 일기를 삭제하시겠습니까?")) {
+            diaryList = diaryList.filter(entry => entry.id !== id);
+            localStorage.setItem('diaryList', JSON.stringify(diaryList));
+            
+            renderCalendar();
+            renderFilteredDiaryList();
+        }
+    }
+
+    function editDiary(id) {
+        const entry = diaryList.find(e => e.id === id);
+        if (!entry) return;
+
+        selectedDateStr = entry.date;
+        localStorage.setItem('selectedDateStr', selectedDateStr);
+
+        document.getElementById('edit-id').value = entry.id;
+        document.getElementById('diary-title').value = entry.title || '';
+        document.getElementById('diary-content').value = entry.content || '';
+        document.getElementById('book-title').value = entry.bookTitle || '';
+        document.getElementById('book-content').value = entry.bookContent || '';
+
+        document.getElementById('submit-btn-text').innerText = '수정 완료';
+        document.getElementById('cancel-btn').style.display = 'block';
+
+        saveDraft(); // 수정 시작 상태도 임시 저장
+        renderCalendar();
+
+        document.getElementById('diaryForm').scrollIntoView({ behavior: 'smooth' });
+    }
+
+    function resetForm() {
+        document.getElementById('diaryForm').reset();
+        document.getElementById('edit-id').value = '';
+        document.getElementById('submit-btn-text').innerText = '저장';
+        document.getElementById('cancel-btn').style.display = 'none';
+        localStorage.removeItem('diaryDraft');
+    }
+
+    function renderFilteredDiaryList() {
+        const listContainer = document.getElementById('allDiaryList');
+        const paginationContainer = document.getElementById('paginationControls');
+        listContainer.innerHTML = '';
+        paginationContainer.innerHTML = '';
+
+        if (!selectedDateStr) {
+            listContainer.innerHTML = '<div class="no-data">달력에서 날짜를 클릭해 주세요.</div>';
+            return;
+        }
+
+        const dayEntries = diaryList.filter(entry => entry.date === selectedDateStr);
+
+        if (dayEntries.length === 0) {
+            listContainer.innerHTML = `<div class="no-data">${selectedDateStr}에 작성된 일기가 없습니다.</div>`;
+            return;
+        }
+
+        const totalPages = dayEntries.length;
+        if (currentPage > totalPages) currentPage = totalPages;
+        if (currentPage < 1) currentPage = 1;
+
+        const entry = dayEntries[currentPage - 1];
+
+        let bookHtml = '';
+        if (entry.bookTitle || entry.bookContent) {
+            bookHtml = `
+                <div class="book-section">
+                    ${entry.bookTitle ? `<div class="book-title-text">[책 제목] ${entry.bookTitle}</div>` : ''}
+                    ${entry.bookContent ? `<div class="book-content-text">${entry.bookContent}</div>` : ''}
+                </div>
+            `;
+        }
+
+        const item = document.createElement('div');
+        item.classList.add('diary-item');
+        item.innerHTML = `
+            <div class="action-btns">
+                <button class="action-btn edit-btn" onclick="editDiary(${entry.id})">수정</button>
+                <button class="action-btn delete-btn" onclick="deleteDiary(${entry.id})">삭제</button>
+            </div>
+            <div class="diary-item-date">${entry.date}</div>
+            <div class="diary-item-title">${entry.title}</div>
+            <div class="diary-item-content">${entry.content}</div>
+            ${bookHtml}
+        `;
+
+        listContainer.appendChild(item);
+
+        if (totalPages > 1) {
+            const prevBtn = document.createElement('button');
+            prevBtn.classList.add('page-btn');
+            prevBtn.innerText = '이전';
+            prevBtn.disabled = currentPage === 1;
+            prevBtn.onclick = () => {
+                currentPage--;
+                renderFilteredDiaryList();
+            };
+
+            const pageInfo = document.createElement('span');
+            pageInfo.classList.add('page-num');
+            pageInfo.innerText = `${currentPage} / ${totalPages}`;
+
+            const nextBtn = document.createElement('button');
+            nextBtn.classList.add('page-btn');
+            nextBtn.innerText = '다음';
+            nextBtn.disabled = currentPage === totalPages;
+            nextBtn.onclick = () => {
+                currentPage++;
+                renderFilteredDiaryList();
+            };
+
+            paginationContainer.appendChild(prevBtn);
+            paginationContainer.appendChild(pageInfo);
+            paginationContainer.appendChild(nextBtn);
+        }
+    }
+
+    // 초기 실행
+    if (selectedDateStr) {
+        const [sYear, sMonth] = selectedDateStr.split('-').map(Number);
+        currentDate.setFullYear(sYear, sMonth - 1, 1);
+    }
+    
+    loadDraft();
     renderCalendar();
-    renderFolders();
-  </script>
+    renderFilteredDiaryList();
+</script>
 </body>
 </html>
